@@ -2,11 +2,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   LayoutDashboard, Users, Briefcase, Wallet, Settings, LogOut,
-  TrendingUp, TrendingDown, AlertCircle, Plus, Edit2, Trash2, X
+  TrendingUp, TrendingDown, AlertCircle, Plus, Edit2, Trash2, ChevronDown, ChevronUp, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
+
+const formatMoney = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
+const formatDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const today = () => new Date().toISOString().split('T')[0];
 
 export const HoverEffect = ({ items, className }) => {
   let [hoveredIndex, setHoveredIndex] = useState(null);
@@ -16,11 +20,7 @@ export const HoverEffect = ({ items, className }) => {
         <div key={item?.id} className="relative group block p-2 h-full w-full" onMouseEnter={() => setHoveredIndex(idx)} onMouseLeave={() => setHoveredIndex(null)}>
           <AnimatePresence>
             {hoveredIndex === idx && (
-              <motion.span
-                className="absolute inset-0 h-full w-full bg-slate-800/[0.8] block rounded-3xl"
-                layoutId="hoverBackground"
-                initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.15 } }} exit={{ opacity: 0, transition: { duration: 0.15, delay: 0.2 } }}
-              />
+              <motion.span className="absolute inset-0 h-full w-full bg-slate-800/[0.8] block rounded-3xl" layoutId="hoverBackground" initial={{ opacity: 0 }} animate={{ opacity: 1, transition: { duration: 0.15 } }} exit={{ opacity: 0, transition: { duration: 0.15, delay: 0.2 } }} />
             )}
           </AnimatePresence>
           <div className="rounded-2xl h-full w-full p-4 overflow-hidden bg-[#151821] border border-white/[0.05] group-hover:border-slate-700 relative z-20 transition-colors">
@@ -38,20 +38,36 @@ export const HoverEffect = ({ items, className }) => {
   );
 };
 
+const inputClass = "w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500";
+const StatusBadge = ({ status }) => {
+  const map = {
+    'Pago': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    'Pendente': 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    'Atrasado': 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+  };
+  return <span className={`px-3 py-1 rounded-full text-xs font-medium border ${map[status] || map['Pendente']}`}>{status}</span>;
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('painel');
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Dados
   const [clients, setClients] = useState([]);
+  const [receivables, setReceivables] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [empPayments, setEmpPayments] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [users, setUsers] = useState([]);
 
-  const [modal, setModal] = useState({ isOpen: false, type: '', data: null });
+  // UI
+  const [modal, setModal] = useState({ isOpen: false, type: '', data: null, parentId: null, parentName: '' });
   const [loginError, setLoginError] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
+  const [expandedClients, setExpandedClients] = useState({});
+  const [expandedEmployees, setExpandedEmployees] = useState({});
 
   // --- PERSISTÊNCIA DE LOGIN ---
   useEffect(() => {
@@ -75,14 +91,18 @@ export default function App() {
   const loadData = async () => {
     if (!currentUser) return;
     try {
-      const [cliRes, empRes, traRes, usrRes] = await Promise.all([
+      const [cliRes, recRes, empRes, payRes, traRes, usrRes] = await Promise.all([
         fetch(`/api/clients?userId=${currentUser.id}`),
+        fetch(`/api/clients/receivables?userId=${currentUser.id}`),
         fetch(`/api/employees?userId=${currentUser.id}`),
+        fetch(`/api/employees/payments?userId=${currentUser.id}`),
         fetch(`/api/transactions?userId=${currentUser.id}`),
         fetch('/api/users')
       ]);
       setClients(await cliRes.json());
+      setReceivables(await recRes.json());
       setEmployees(await empRes.json());
+      setEmpPayments(await payRes.json());
       setTransactions(await traRes.json());
       setUsers(await usrRes.json());
     } catch (error) {
@@ -104,12 +124,8 @@ export default function App() {
       body: JSON.stringify({ email: e.target.email.value, password: e.target.password.value })
     });
     const data = await res.json();
-    if (res.ok) {
-      setCurrentUser(data.user);
-      setIsAuthenticated(true);
-    } else {
-      setLoginError(data.error);
-    }
+    if (res.ok) { setCurrentUser(data.user); setIsAuthenticated(true); }
+    else setLoginError(data.error);
   };
 
   const handleRegister = async (e) => {
@@ -121,46 +137,63 @@ export default function App() {
       body: JSON.stringify({ name: e.target.name.value, email: e.target.email.value, password: e.target.password.value })
     });
     const data = await res.json();
-    if (res.ok) {
-      setCurrentUser(data.user);
-      setIsAuthenticated(true);
-    } else {
-      setLoginError(data.error);
-    }
+    if (res.ok) { setCurrentUser(data.user); setIsAuthenticated(true); }
+    else setLoginError(data.error);
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setActiveTab('painel');
-    setIsLoginMode(true);
+    setIsAuthenticated(false); setCurrentUser(null); setActiveTab('painel'); setIsLoginMode(true);
     localStorage.removeItem('upvalor_user');
   };
 
-  // --- CRUD ACTIONS ---
-  const handleDeleteClient = async (id) => {
-    const client = clients.find(c => c.id === id);
-    if (client) {
-      // Excluir transações vinculadas (Recebimento - Nome)
-      const linkedTrans = transactions.filter(t => t.description.toLowerCase().includes(`recebimento - ${client.name.toLowerCase()}`));
-      for (const t of linkedTrans) {
-        await fetch(`/api/transactions?id=${t.id}&userId=${currentUser.id}`, { method: 'DELETE' });
+  // --- DELETE HELPERS ---
+  const deleteLinkedTransaction = async (description) => {
+    const linked = transactions.filter(t => t.description.toLowerCase() === description.toLowerCase());
+    for (const t of linked) {
+      await fetch(`/api/transactions?id=${t.id}&userId=${currentUser.id}`, { method: 'DELETE' });
+    }
+  };
+
+  // Deletar cliente: apaga o cliente (cascata apaga receivables no DB), e as transações vinculadas
+  const handleDeleteClient = async (clientId, clientName) => {
+    const clientReceivables = receivables.filter(r => r.client_id === clientId);
+    for (const r of clientReceivables) {
+      if (r.status === 'Pago') {
+        await deleteLinkedTransaction(`Recebimento - ${clientName}`);
       }
     }
-    await fetch(`/api/clients?id=${id}&userId=${currentUser.id}`, { method: 'DELETE' });
+    await fetch(`/api/clients?id=${clientId}&userId=${currentUser.id}`, { method: 'DELETE' });
     loadData();
   };
 
-  const handleDeleteEmployee = async (id) => {
-    const emp = employees.find(e => e.id === id);
-    if (emp) {
-      // Excluir transações vinculadas (Salário - Nome)
-      const linkedTrans = transactions.filter(t => t.description.toLowerCase().includes(`salário - ${emp.name.toLowerCase()}`));
-      for (const t of linkedTrans) {
-        await fetch(`/api/transactions?id=${t.id}&userId=${currentUser.id}`, { method: 'DELETE' });
+  // Deletar cobrança individual do cliente
+  const handleDeleteReceivable = async (receivable) => {
+    if (receivable.status === 'Pago') {
+      // Reverter transação do fluxo de caixa
+      await deleteLinkedTransaction(`Recebimento - ${receivable.client_name}`);
+    }
+    await fetch(`/api/clients/receivables?id=${receivable.id}&userId=${currentUser.id}`, { method: 'DELETE' });
+    loadData();
+  };
+
+  // Deletar funcionário: cascata apaga payments, e as transações
+  const handleDeleteEmployee = async (employeeId, employeeName) => {
+    const empPays = empPayments.filter(p => p.employee_id === employeeId);
+    for (const p of empPays) {
+      if (p.status === 'Pago') {
+        await deleteLinkedTransaction(`Salário - ${employeeName}`);
       }
     }
-    await fetch(`/api/employees?id=${id}&userId=${currentUser.id}`, { method: 'DELETE' });
+    await fetch(`/api/employees?id=${employeeId}&userId=${currentUser.id}`, { method: 'DELETE' });
+    loadData();
+  };
+
+  // Deletar pagamento individual de funcionário
+  const handleDeleteEmpPayment = async (payment) => {
+    if (payment.status === 'Pago') {
+      await deleteLinkedTransaction(`Salário - ${payment.employee_name}`);
+    }
+    await fetch(`/api/employees/payments?id=${payment.id}&userId=${currentUser.id}`, { method: 'DELETE' });
     loadData();
   };
 
@@ -170,105 +203,158 @@ export default function App() {
     setUsers(users.filter(u => u.id !== id));
   };
 
-  const handleDeleteTransaction = async (id) => {
-    const trans = transactions.find(t => t.id === id);
-    if (trans) {
-      const desc = trans.description.toLowerCase();
-      // Tentar reverter status de cliente/funcionário (mais robusco)
-      if (desc.includes('recebimento - ')) {
-        const clientName = trans.description.split(' - ')[1]?.trim();
-        const client = clients.find(c => c.name.toLowerCase() === clientName?.toLowerCase());
-        if (client) {
-          await fetch('/api/clients', { method: 'PUT', body: JSON.stringify({ ...client, status: 'Pendente', userId: currentUser.id }) });
-        }
-      } else if (desc.includes('salário - ')) {
-        const empName = trans.description.split(' - ')[1]?.trim();
-        const emp = employees.find(e => e.name.toLowerCase() === empName?.toLowerCase());
-        if (emp) {
-          await fetch('/api/employees', { method: 'PUT', body: JSON.stringify({ ...emp, status: 'Pendente', userId: currentUser.id }) });
-        }
+  // Deletar transação do fluxo de caixa — e reverter status da cobrança/pagamento
+  const handleDeleteTransaction = async (trans) => {
+    const desc = trans.description.toLowerCase();
+    if (desc.startsWith('recebimento - ')) {
+      const clientName = trans.description.substring(14).trim();
+      // Reverter cobrança para Pendente
+      const receivable = receivables.find(r => r.client_name?.toLowerCase() === clientName.toLowerCase() && r.status === 'Pago');
+      if (receivable) {
+        await fetch('/api/clients/receivables', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...receivable, status: 'Pendente', userId: currentUser.id, dueDate: receivable.due_date })
+        });
+      }
+    } else if (desc.startsWith('salário - ')) {
+      const empName = trans.description.substring(10).trim();
+      const payment = empPayments.find(p => p.employee_name?.toLowerCase() === empName.toLowerCase() && p.status === 'Pago');
+      if (payment) {
+        await fetch('/api/employees/payments', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payment, status: 'Pendente', userId: currentUser.id, dueDate: payment.due_date })
+        });
       }
     }
-    await fetch(`/api/transactions?id=${id}&userId=${currentUser.id}`, { method: 'DELETE' });
+    await fetch(`/api/transactions?id=${trans.id}&userId=${currentUser.id}`, { method: 'DELETE' });
     loadData();
   };
 
+  // --- MARCAR COMO PAGO ---
+  const markReceivableAsPaid = async (receivable) => {
+    await fetch('/api/clients/receivables', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...receivable, status: 'Pago', userId: currentUser.id, dueDate: receivable.due_date })
+    });
+    await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: today(), description: `Recebimento - ${receivable.client_name}`, type: 'entrada', amount: receivable.amount, userId: currentUser.id })
+    });
+    loadData();
+  };
+
+  const markEmpPaymentAsPaid = async (payment) => {
+    await fetch('/api/employees/payments', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...payment, status: 'Pago', userId: currentUser.id, dueDate: payment.due_date })
+    });
+    await fetch('/api/transactions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: today(), description: `Salário - ${payment.employee_name}`, type: 'saida', amount: payment.amount, userId: currentUser.id })
+    });
+    loadData();
+  };
+
+  // --- SAVE MODAL ---
   const handleSave = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
     const isEdit = !!modal.data;
+    const headers = { 'Content-Type': 'application/json' };
+
+    // Helper: criar transação no fluxo de caixa
+    const createTransaction = async (description, amount, type) => {
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ date: today(), description, amount: parseFloat(amount), type, userId: currentUser.id })
+      });
+    };
 
     try {
       if (modal.type === 'client') {
-        const payload = { ...data, amount: parseFloat(data.amount), userId: currentUser.id };
+        const payload = { name: data.name, userId: currentUser.id };
+        if (isEdit) await fetch('/api/clients', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
+        else await fetch('/api/clients', { method: 'POST', headers, body: JSON.stringify(payload) });
+
+      } else if (modal.type === 'receivable') {
+        const payload = { clientId: modal.parentId, userId: currentUser.id, description: data.description, amount: parseFloat(data.amount), dueDate: data.dueDate, status: data.status || 'Pendente' };
+        const oldStatus = modal.data?.status;
+        const newStatus = data.status;
+
         if (isEdit) {
-          await fetch('/api/clients', { method: 'PUT', body: JSON.stringify({ id: modal.data.id, ...payload }) });
-          // Sincronizar transação se já existir uma vinculada
-          const linkedTrans = transactions.find(t => t.description.includes(`Recebimento - ${modal.data.name}`));
-          if (linkedTrans) {
-            await fetch('/api/transactions', {
-              method: 'PUT',
-              body: JSON.stringify({ ...linkedTrans, amount: payload.amount, description: `Recebimento - ${payload.name}`, userId: currentUser.id })
-            });
+          await fetch('/api/clients/receivables', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
+          // Mudou de não-Pago para Pago → criar transação
+          if (oldStatus !== 'Pago' && newStatus === 'Pago') {
+            await createTransaction(`Recebimento - ${modal.parentName}`, data.amount, 'entrada');
+          }
+          // Mudou de Pago para não-Pago → reverter transação
+          if (oldStatus === 'Pago' && newStatus !== 'Pago') {
+            await deleteLinkedTransaction(`Recebimento - ${modal.parentName}`);
           }
         } else {
-          await fetch('/api/clients', { method: 'POST', body: JSON.stringify(payload) });
+          await fetch('/api/clients/receivables', { method: 'POST', headers, body: JSON.stringify(payload) });
+          // Criou já como Pago → criar transação
+          if (newStatus === 'Pago') {
+            await createTransaction(`Recebimento - ${modal.parentName}`, data.amount, 'entrada');
+          }
         }
+
       } else if (modal.type === 'employee') {
-        const payload = { ...data, salary: parseFloat(data.salary), userId: currentUser.id };
+        const payload = { name: data.name, role: data.role, userId: currentUser.id };
+        if (isEdit) await fetch('/api/employees', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
+        else await fetch('/api/employees', { method: 'POST', headers, body: JSON.stringify(payload) });
+
+      } else if (modal.type === 'empPayment') {
+        const payload = { employeeId: modal.parentId, userId: currentUser.id, description: data.description, amount: parseFloat(data.amount), dueDate: data.dueDate, status: data.status || 'Pendente' };
+        const oldStatus = modal.data?.status;
+        const newStatus = data.status;
+
         if (isEdit) {
-          await fetch('/api/employees', { method: 'PUT', body: JSON.stringify({ id: modal.data.id, ...payload }) });
-          // Sincronizar transação se já existir uma vinculada
-          const linkedTrans = transactions.find(t => t.description.includes(`Salário - ${modal.data.name}`));
-          if (linkedTrans) {
-            await fetch('/api/transactions', {
-              method: 'PUT',
-              body: JSON.stringify({ ...linkedTrans, amount: payload.salary, description: `Salário - ${payload.name}`, userId: currentUser.id })
-            });
+          await fetch('/api/employees/payments', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
+          if (oldStatus !== 'Pago' && newStatus === 'Pago') {
+            await createTransaction(`Salário - ${modal.parentName}`, data.amount, 'saida');
+          }
+          if (oldStatus === 'Pago' && newStatus !== 'Pago') {
+            await deleteLinkedTransaction(`Salário - ${modal.parentName}`);
           }
         } else {
-          await fetch('/api/employees', { method: 'POST', body: JSON.stringify(payload) });
+          await fetch('/api/employees/payments', { method: 'POST', headers, body: JSON.stringify(payload) });
+          if (newStatus === 'Pago') {
+            await createTransaction(`Salário - ${modal.parentName}`, data.amount, 'saida');
+          }
         }
+
       } else if (modal.type === 'transaction') {
         const payload = { ...data, amount: parseFloat(data.amount), userId: currentUser.id };
-        if (isEdit) {
-          await fetch('/api/transactions', { method: 'PUT', body: JSON.stringify({ id: modal.data.id, ...payload }) });
-        } else {
-          await fetch('/api/transactions', { method: 'POST', body: JSON.stringify(payload) });
-        }
+        if (isEdit) await fetch('/api/transactions', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
+        else await fetch('/api/transactions', { method: 'POST', headers, body: JSON.stringify(payload) });
       }
       loadData();
-      setModal({ isOpen: false, type: '', data: null });
+      setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' });
     } catch (error) {
-      alert("Erro ao salvar no banco de dados.");
+      alert("Erro ao salvar.");
     }
   };
 
-  const markClientAsPaid = async (client) => {
-    await fetch('/api/clients', { method: 'PUT', body: JSON.stringify({ ...client, status: 'Pago', userId: currentUser.id }) });
-    await fetch('/api/transactions', { method: 'POST', body: JSON.stringify({ date: new Date().toISOString().split('T')[0], description: `Recebimento - ${client.name}`, type: 'entrada', amount: client.amount, userId: currentUser.id }) });
-    loadData();
-  };
-
-  const markEmployeeAsPaid = async (emp) => {
-    await fetch('/api/employees', { method: 'PUT', body: JSON.stringify({ ...emp, status: 'Pago', userId: currentUser.id }) });
-    await fetch('/api/transactions', { method: 'POST', body: JSON.stringify({ date: new Date().toISOString().split('T')[0], description: `Salário - ${emp.name}`, type: 'saida', amount: emp.salary, userId: currentUser.id }) });
-    loadData();
-  };
 
   // --- KPIS ---
   const kpis = useMemo(() => {
-    const aReceber = clients.filter(c => c.status !== 'Pago').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-    const vencido = clients.filter(c => c.status === 'Atrasado').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-    const folhaSalarial = employees.filter(e => e.status !== 'Pago').reduce((acc, curr) => acc + parseFloat(curr.salary), 0);
+    const aReceber = receivables.filter(r => r.status !== 'Pago').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    const vencido = receivables.filter(r => r.status === 'Atrasado').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    const folhaSalarial = empPayments.filter(p => p.status === 'Pendente').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const entradas = transactions.filter(t => t.type === 'entrada').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const saidas = transactions.filter(t => t.type === 'saida').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const saldo = entradas - saidas;
     return { aReceber, vencido, folhaSalarial, saldo };
-  }, [clients, employees, transactions]);
-
-  const formatMoney = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  }, [receivables, empPayments, transactions]);
 
   const kpiItems = [
     { id: "saldo", title: "Saldo Atual", value: formatMoney(kpis.saldo), icon: <Wallet className="text-blue-400 w-5 h-5" /> },
@@ -282,7 +368,7 @@ export default function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl transition-all duration-300">
+        <div className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
               <TrendingUp className="text-white w-8 h-8" />
@@ -290,19 +376,18 @@ export default function App() {
             <h1 className="text-2xl font-bold text-white tracking-tight">UpValor</h1>
           </div>
           {loginError && <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">{loginError}</div>}
-
           {isLoginMode ? (
             <form onSubmit={handleLogin} className="space-y-4">
-              <input name="email" type="email" placeholder="Seu e-mail" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-              <input name="password" type="password" placeholder="Sua senha" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+              <input name="email" type="email" placeholder="Seu e-mail" className={inputClass} required />
+              <input name="password" type="password" placeholder="Sua senha" className={inputClass} required />
               <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-semibold rounded-lg px-4 py-3 shadow-lg shadow-blue-500/25">Entrar no Sistema</button>
               <p className="text-center text-sm text-slate-400 mt-4">Não tem uma conta? <button type="button" onClick={() => setIsLoginMode(false)} className="text-blue-400 hover:text-blue-300 font-medium">Cadastre-se</button></p>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
-              <input name="name" type="text" placeholder="Seu nome completo" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-              <input name="email" type="email" placeholder="Seu e-mail" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-              <input name="password" type="password" placeholder="Escolha uma senha" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500" required minLength={6} />
+              <input name="name" type="text" placeholder="Seu nome completo" className={inputClass} required />
+              <input name="email" type="email" placeholder="Seu e-mail" className={inputClass} required />
+              <input name="password" type="password" placeholder="Escolha uma senha" className={inputClass} required minLength={6} />
               <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-semibold rounded-lg px-4 py-3 shadow-lg shadow-emerald-500/25 mt-2">Criar Minha Conta</button>
               <p className="text-center text-sm text-slate-400 mt-4">Já tem uma conta? <button type="button" onClick={() => setIsLoginMode(true)} className="text-blue-400 hover:text-blue-300 font-medium">Fazer login</button></p>
             </form>
@@ -321,9 +406,12 @@ export default function App() {
     ...(currentUser?.role === 'admin' ? [{ name: "admin", label: "Admin", icon: Settings }] : [])
   ];
 
+  // Cobranças pendentes/atrasadas para o dashboard
+  const pendingReceivables = receivables.filter(r => r.status !== 'Pago');
+  const pendingEmpPayments = empPayments.filter(p => p.status === 'Pendente');
+
   return (
     <div className="min-h-screen bg-[#0f1117] text-slate-200 font-sans relative pb-32">
-      {/* Header e Menus Flutuantes (Simplificados para o arquivo não ficar gigante) */}
       <div className="fixed top-4 right-4 z-50 flex items-center bg-[#151821]/80 backdrop-blur-md p-1.5 rounded-full border border-white/5 shadow-xl">
         <span className="text-sm font-medium text-white mr-3 ml-4">{currentUser.name}</span>
         <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-400 rounded-full bg-white/5 mr-1"><LogOut className="w-4 h-4" /></button>
@@ -346,49 +434,106 @@ export default function App() {
 
       <main className="pt-28 max-w-7xl mx-auto px-6 md:px-8 space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white capitalize">{activeTab === 'fluxo' ? 'Fluxo de Caixa' : activeTab === 'painel' ? 'Painel de Controle' : activeTab}</h1>
-          {activeTab !== 'painel' && activeTab !== 'admin' && (
-            <button onClick={() => setModal({ isOpen: true, type: activeTab === 'clientes' ? 'client' : activeTab === 'funcionarios' ? 'employee' : 'transaction', data: null })} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20">
-              <Plus className="w-4 h-4" /><span>Novo Registro</span>
+          <h1 className="text-3xl font-bold text-white capitalize">
+            {activeTab === 'fluxo' ? 'Fluxo de Caixa' : activeTab === 'painel' ? 'Painel de Controle' : activeTab === 'funcionarios' ? 'Funcionários' : activeTab}
+          </h1>
+          {(activeTab === 'clientes' || activeTab === 'funcionarios') && (
+            <button
+              onClick={() => setModal({ isOpen: true, type: activeTab === 'clientes' ? 'client' : 'employee', data: null, parentId: null, parentName: '' })}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-colors"
+            >
+              <Plus className="w-4 h-4" /><span>{activeTab === 'clientes' ? 'Novo Cliente' : 'Novo Funcionário'}</span>
+            </button>
+          )}
+          {activeTab === 'fluxo' && (
+            <button
+              onClick={() => setModal({ isOpen: true, type: 'transaction', data: null, parentId: null, parentName: '' })}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-colors"
+            >
+              <Plus className="w-4 h-4" /><span>Nova Transação</span>
             </button>
           )}
         </div>
 
+        {/* ===== PAINEL ===== */}
         {activeTab === 'painel' && (
           <>
             <HoverEffect items={kpiItems} className="-mx-2" />
-            <div className="mt-12 space-y-4">
-              <h2 className="text-xl font-bold text-white">Últimas Transações</h2>
+
+            {/* A Receber dos Clientes */}
+            <div className="mt-8 space-y-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <TrendingUp className="text-emerald-400 w-5 h-5" /> A Receber dos Clientes
+              </h2>
               <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
                 <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-[#151821]/80 text-slate-400 text-sm">
-                      <th className="p-4">Data</th>
-                      <th className="p-4">Descrição</th>
-                      <th className="p-4">Tipo</th>
-                      <th className="p-4 text-right">Valor</th>
-                    </tr>
-                  </thead>
+                  <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Cliente</th><th className="p-4">Descrição</th><th className="p-4">Vencimento</th><th className="p-4">Status</th><th className="p-4 text-right">Valor</th><th className="p-4 text-right">Ação</th></tr></thead>
                   <tbody className="divide-y divide-white/5">
-                    {transactions.slice(0, 5).map(t => (
-                      <tr key={t.id}>
-                        <td className="p-4 text-slate-400">{new Date(t.date).toLocaleDateString('pt-BR')}</td>
-                        <td className="p-4 text-white font-medium">{t.description}</td>
-                        <td className="p-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                            {t.type}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right font-mono" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>
-                          {t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}
+                    {pendingReceivables.length === 0 && (
+                      <tr><td colSpan="6" className="p-8 text-center text-slate-500 italic">Nenhuma cobrança pendente.</td></tr>
+                    )}
+                    {pendingReceivables.map(r => (
+                      <tr key={r.id}>
+                        <td className="p-4 text-white font-medium">{r.client_name}</td>
+                        <td className="p-4 text-slate-400">{r.description}</td>
+                        <td className="p-4 text-slate-400">{formatDate(r.due_date)}</td>
+                        <td className="p-4"><StatusBadge status={r.status} /></td>
+                        <td className="p-4 text-right text-emerald-400 font-mono font-semibold">{formatMoney(r.amount)}</td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors">Receber</button>
                         </td>
                       </tr>
                     ))}
-                    {transactions.length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="p-8 text-center text-slate-500 italic">Nenhuma transação registrada.</td>
-                      </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* A Pagar aos Funcionários */}
+            <div className="mt-8 space-y-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Briefcase className="text-orange-400 w-5 h-5" /> A Pagar aos Funcionários
+              </h2>
+              <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
+                <table className="w-full text-left border-collapse">
+                  <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Funcionário</th><th className="p-4">Cargo</th><th className="p-4">Descrição</th><th className="p-4">Status</th><th className="p-4 text-right">Valor</th><th className="p-4 text-right">Ação</th></tr></thead>
+                  <tbody className="divide-y divide-white/5">
+                    {pendingEmpPayments.length === 0 && (
+                      <tr><td colSpan="6" className="p-8 text-center text-slate-500 italic">Nenhum pagamento pendente.</td></tr>
                     )}
+                    {pendingEmpPayments.map(p => (
+                      <tr key={p.id}>
+                        <td className="p-4 text-white font-medium">{p.employee_name}</td>
+                        <td className="p-4 text-slate-400">{p.employee_role}</td>
+                        <td className="p-4 text-slate-400">{p.description}</td>
+                        <td className="p-4"><StatusBadge status={p.status} /></td>
+                        <td className="p-4 text-right text-rose-400 font-mono font-semibold">{formatMoney(p.amount)}</td>
+                        <td className="p-4 text-right">
+                          <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors">Pagar</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Últimas transações */}
+            <div className="mt-8 space-y-4">
+              <h2 className="text-xl font-bold text-white">Últimas Transações</h2>
+              <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
+                <table className="w-full text-left border-collapse">
+                  <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Data</th><th className="p-4">Descrição</th><th className="p-4">Tipo</th><th className="p-4 text-right">Valor</th></tr></thead>
+                  <tbody className="divide-y divide-white/5">
+                    {transactions.slice(0, 5).map(t => (
+                      <tr key={t.id}>
+                        <td className="p-4 text-slate-400">{formatDate(t.date?.split('T')[0] || t.date)}</td>
+                        <td className="p-4 text-white font-medium">{t.description}</td>
+                        <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.type}</span></td>
+                        <td className="p-4 text-right font-mono" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</td>
+                      </tr>
+                    ))}
+                    {transactions.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-500 italic">Nenhuma transação registrada.</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -396,51 +541,141 @@ export default function App() {
           </>
         )}
 
+        {/* ===== CLIENTES ===== */}
         {activeTab === 'clientes' && (
-          <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-            <table className="w-full text-left border-collapse">
-              <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Cliente</th><th className="p-4">Valor</th><th className="p-4">Status</th><th className="p-4 text-right">Ação</th></tr></thead>
-              <tbody className="divide-y divide-white/5">
-                {clients.map(client => (
-                  <tr key={client.id}>
-                    <td className="p-4 text-white font-medium">{client.name}</td>
-                    <td className="p-4">{formatMoney(client.amount)}</td>
-                    <td className="p-4"><span className={`px-3 py-1 rounded-full text-xs font-medium border ${client.status === 'Pago' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : client.status === 'Atrasado' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>{client.status}</span></td>
-                    <td className="p-4 text-right space-x-2">
-                      {client.status !== 'Pago' && <button onClick={() => markClientAsPaid(client)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg">Receber</button>}
-                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client })} className="text-slate-400 hover:text-blue-400"><Edit2 className="w-4 h-4 inline" /></button>
-                      <button onClick={() => handleDeleteClient(client.id)} className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {clients.length === 0 && (
+              <div className="bg-white/5 rounded-2xl p-10 text-center text-slate-500 italic border border-white/5">
+                Nenhum cliente cadastrado. Clique em "Novo Cliente" para começar.
+              </div>
+            )}
+            {clients.map(client => {
+              const clientRecs = receivables.filter(r => r.client_id === client.id);
+              const isExpanded = expandedClients[client.id];
+              const pendingSum = clientRecs.filter(r => r.status !== 'Pago').reduce((a, b) => a + parseFloat(b.amount), 0);
+              return (
+                <div key={client.id} className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => setExpandedClients(prev => ({ ...prev, [client.id]: !prev[client.id] }))} className="text-slate-400 hover:text-white transition-colors">
+                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </button>
+                      <div>
+                        <p className="text-white font-semibold">{client.name}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">{clientRecs.length} cobrança(s) · A receber: <span className="text-emerald-400">{formatMoney(pendingSum)}</span></p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setModal({ isOpen: true, type: 'receivable', data: null, parentId: client.id, parentName: client.name })}
+                        className="flex items-center gap-1.5 text-xs text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Nova Cobrança
+                      </button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteClient(client.id, client.name)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="border-t border-white/5">
+                      {clientRecs.length === 0 ? (
+                        <p className="p-4 pl-14 text-slate-500 text-sm italic">Nenhuma cobrança registrada para este cliente.</p>
+                      ) : (
+                        <table className="w-full text-left">
+                          <thead><tr className="bg-[#0f1117]/60 text-slate-500 text-xs"><th className="py-2 pl-14 pr-4">Descrição</th><th className="py-2 px-4">Vencimento</th><th className="py-2 px-4">Status</th><th className="py-2 px-4 text-right">Valor</th><th className="py-2 px-4 text-right">Ação</th></tr></thead>
+                          <tbody className="divide-y divide-white/[0.03]">
+                            {clientRecs.map(r => (
+                              <tr key={r.id}>
+                                <td className="py-3 pl-14 pr-4 text-slate-300 text-sm">{r.description}</td>
+                                <td className="py-3 px-4 text-slate-400 text-sm">{formatDate(r.due_date)}</td>
+                                <td className="py-3 px-4"><StatusBadge status={r.status} /></td>
+                                <td className="py-3 px-4 text-right font-mono text-sm" style={{ color: r.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(r.amount)}</td>
+                                <td className="py-3 px-4 text-right space-x-1">
+                                  {r.status !== 'Pago' && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-2 py-1 rounded hover:bg-blue-500/10 transition-colors">Receber</button>}
+                                  <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} className="text-slate-400 hover:text-blue-400 p-1 rounded"><Edit2 className="w-3.5 h-3.5 inline" /></button>
+                                  <button onClick={() => handleDeleteReceivable(r)} className="text-slate-400 hover:text-rose-400 p-1 rounded"><Trash2 className="w-3.5 h-3.5 inline" /></button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
+        {/* ===== FUNCIONÁRIOS ===== */}
         {activeTab === 'funcionarios' && (
-          <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-            <table className="w-full text-left border-collapse">
-              <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Nome</th><th className="p-4">Cargo</th><th className="p-4">Salário</th><th className="p-4">Status</th><th className="p-4 text-right">Ação</th></tr></thead>
-              <tbody className="divide-y divide-white/5">
-                {employees.map(emp => (
-                  <tr key={emp.id}>
-                    <td className="p-4 text-white font-medium">{emp.name}</td>
-                    <td className="p-4 text-slate-400">{emp.role}</td>
-                    <td className="p-4">{formatMoney(emp.salary)}</td>
-                    <td className="p-4"><span className={`px-3 py-1 rounded-full text-xs font-medium border ${emp.status === 'Pago' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>{emp.status}</span></td>
-                    <td className="p-4 text-right space-x-2">
-                      {emp.status !== 'Pago' && <button onClick={() => markEmployeeAsPaid(emp)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg">Pagar</button>}
-                      <button onClick={() => setModal({ isOpen: true, type: 'employee', data: emp })} className="text-slate-400 hover:text-blue-400"><Edit2 className="w-4 h-4 inline" /></button>
-                      <button onClick={() => handleDeleteEmployee(emp.id)} className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="space-y-3">
+            {employees.length === 0 && (
+              <div className="bg-white/5 rounded-2xl p-10 text-center text-slate-500 italic border border-white/5">
+                Nenhum funcionário cadastrado. Clique em "Novo Funcionário" para começar.
+              </div>
+            )}
+            {employees.map(emp => {
+              const empPays = empPayments.filter(p => p.employee_id === emp.id);
+              const isExpanded = expandedEmployees[emp.id];
+              const pendingSum = empPays.filter(p => p.status === 'Pendente').reduce((a, b) => a + parseFloat(b.amount), 0);
+              return (
+                <div key={emp.id} className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => setExpandedEmployees(prev => ({ ...prev, [emp.id]: !prev[emp.id] }))} className="text-slate-400 hover:text-white transition-colors">
+                        {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                      </button>
+                      <div>
+                        <p className="text-white font-semibold">{emp.name}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">{emp.role} · {empPays.length} pagamento(s) · A pagar: <span className="text-orange-400">{formatMoney(pendingSum)}</span></p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setModal({ isOpen: true, type: 'empPayment', data: null, parentId: emp.id, parentName: emp.name })}
+                        className="flex items-center gap-1.5 text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Novo Pagamento
+                      </button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'employee', data: emp, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteEmployee(emp.id, emp.name)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="border-t border-white/5">
+                      {empPays.length === 0 ? (
+                        <p className="p-4 pl-14 text-slate-500 text-sm italic">Nenhum pagamento registrado para este funcionário.</p>
+                      ) : (
+                        <table className="w-full text-left">
+                          <thead><tr className="bg-[#0f1117]/60 text-slate-500 text-xs"><th className="py-2 pl-14 pr-4">Descrição</th><th className="py-2 px-4">Vencimento</th><th className="py-2 px-4">Status</th><th className="py-2 px-4 text-right">Valor</th><th className="py-2 px-4 text-right">Ação</th></tr></thead>
+                          <tbody className="divide-y divide-white/[0.03]">
+                            {empPays.map(p => (
+                              <tr key={p.id}>
+                                <td className="py-3 pl-14 pr-4 text-slate-300 text-sm">{p.description}</td>
+                                <td className="py-3 px-4 text-slate-400 text-sm">{formatDate(p.due_date)}</td>
+                                <td className="py-3 px-4"><StatusBadge status={p.status} /></td>
+                                <td className="py-3 px-4 text-right font-mono text-sm" style={{ color: p.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(p.amount)}</td>
+                                <td className="py-3 px-4 text-right space-x-1">
+                                  {p.status !== 'Pago' && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-2 py-1 rounded hover:bg-orange-500/10 transition-colors">Pagar</button>}
+                                  <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} className="text-slate-400 hover:text-blue-400 p-1 rounded"><Edit2 className="w-3.5 h-3.5 inline" /></button>
+                                  <button onClick={() => handleDeleteEmpPayment(p)} className="text-slate-400 hover:text-rose-400 p-1 rounded"><Trash2 className="w-3.5 h-3.5 inline" /></button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
+        {/* ===== FLUXO DE CAIXA ===== */}
         {activeTab === 'fluxo' && (
           <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
             <table className="w-full text-left border-collapse">
@@ -448,27 +683,23 @@ export default function App() {
               <tbody className="divide-y divide-white/5">
                 {transactions.map(t => (
                   <tr key={t.id}>
-                    <td className="p-4 text-slate-400">{new Date(t.date).toLocaleDateString('pt-BR')}</td>
+                    <td className="p-4 text-slate-400">{formatDate(t.date?.split('T')[0] || t.date)}</td>
                     <td className="p-4 text-white font-medium">{t.description}</td>
-                    <td className="p-4">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                        {t.type}
-                      </span>
-                    </td>
-                    <td className="p-4 font-mono" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>
-                      {t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}
-                    </td>
+                    <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.type}</span></td>
+                    <td className="p-4 font-mono" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</td>
                     <td className="p-4 text-right space-x-2">
-                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t })} className="text-slate-400 hover:text-blue-400"><Edit2 className="w-4 h-4 inline" /></button>
-                      <button onClick={() => handleDeleteTransaction(t.id)} className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400"><Edit2 className="w-4 h-4 inline" /></button>
+                      <button onClick={() => handleDeleteTransaction(t)} className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
                     </td>
                   </tr>
                 ))}
+                {transactions.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-slate-500 italic">Nenhuma transação registrada.</td></tr>}
               </tbody>
             </table>
           </div>
         )}
 
+        {/* ===== ADMIN ===== */}
         {activeTab === 'admin' && (
           <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
             <table className="w-full text-left border-collapse">
@@ -490,57 +721,89 @@ export default function App() {
             </table>
           </div>
         )}
-
       </main>
 
-      {/* MODAL */}
+      {/* ===== MODAL ===== */}
       <AnimatePresence>
         {modal.isOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModal({ isOpen: false, type: '', data: null })} />
-            <div className="relative bg-[#151821] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-6 z-10">
-              <h3 className="text-xl font-bold text-white mb-6">Salvar Dados</h3>
-              <form onSubmit={handleSave} className="space-y-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' })} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-[#151821] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-6 z-10"
+            >
+              <h3 className="text-xl font-bold text-white mb-1">
+                {modal.type === 'client' ? (modal.data ? 'Editar Cliente' : 'Novo Cliente') :
+                  modal.type === 'receivable' ? (modal.data ? 'Editar Cobrança' : `Nova Cobrança — ${modal.parentName}`) :
+                    modal.type === 'employee' ? (modal.data ? 'Editar Funcionário' : 'Novo Funcionário') :
+                      modal.type === 'empPayment' ? (modal.data ? 'Editar Pagamento' : `Novo Pagamento — ${modal.parentName}`) :
+                        modal.type === 'transaction' ? (modal.data ? 'Editar Transação' : 'Nova Transação') : 'Dados'}
+              </h3>
+              {modal.parentName && (modal.type === 'receivable' || modal.type === 'empPayment') && !modal.data &&
+                <p className="text-slate-500 text-sm mb-4">Vinculado a: <span className="text-slate-300">{modal.parentName}</span></p>
+              }
+              <form onSubmit={handleSave} className="space-y-4 mt-4">
+                {/* Cliente */}
                 {modal.type === 'client' && (
+                  <input name="name" defaultValue={modal.data?.name} placeholder="Nome do Cliente" className={inputClass} required />
+                )}
+
+                {/* Cobrança do cliente */}
+                {modal.type === 'receivable' && (
                   <>
-                    <input name="name" defaultValue={modal.data?.name} placeholder="Nome do Cliente" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required />
-                    <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required />
-                    <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || new Date().toISOString().split('T')[0]} className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required style={{ colorScheme: 'dark' }} />
-                    <select name="status" defaultValue={modal.data?.status || 'Pendente'} className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5">
+                    <input name="description" defaultValue={modal.data?.description || 'Cobrança'} placeholder="Descrição (ex: Serviço de Março)" className={inputClass} required />
+                    <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
+                    <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} />
+                    <select name="status" defaultValue={modal.data?.status || 'Pendente'} className={inputClass}>
                       <option value="Pendente">Pendente</option>
-                      <option value="Pago">Pago</option>
                       <option value="Atrasado">Atrasado</option>
+                      <option value="Pago">Pago</option>
                     </select>
                   </>
                 )}
+
+                {/* Funcionário */}
                 {modal.type === 'employee' && (
                   <>
-                    <input name="name" defaultValue={modal.data?.name} placeholder="Nome do Funcionário" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required />
-                    <input name="role" defaultValue={modal.data?.role} placeholder="Cargo" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required />
-                    <input name="salary" type="number" step="0.01" defaultValue={modal.data?.salary} placeholder="Salário" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required />
-                    <select name="status" defaultValue={modal.data?.status || 'Pendente'} className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5">
+                    <input name="name" defaultValue={modal.data?.name} placeholder="Nome do Funcionário" className={inputClass} required />
+                    <input name="role" defaultValue={modal.data?.role} placeholder="Cargo" className={inputClass} required />
+                  </>
+                )}
+
+                {/* Pagamento do funcionário */}
+                {modal.type === 'empPayment' && (
+                  <>
+                    <input name="description" defaultValue={modal.data?.description || 'Salário'} placeholder="Descrição (ex: Salário Março/2026)" className={inputClass} required />
+                    <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
+                    <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} />
+                    <select name="status" defaultValue={modal.data?.status || 'Pendente'} className={inputClass}>
                       <option value="Pendente">Pendente</option>
                       <option value="Pago">Pago</option>
                     </select>
                   </>
                 )}
+
+                {/* Transação */}
                 {modal.type === 'transaction' && (
                   <>
-                    <input name="description" defaultValue={modal.data?.description} placeholder="Descrição da Transação" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required />
-                    <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor" className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required />
-                    <input name="date" type="date" defaultValue={modal.data?.date?.split('T')[0] || new Date().toISOString().split('T')[0]} className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5" required style={{ colorScheme: 'dark' }} />
-                    <select name="type" defaultValue={modal.data?.type || 'saida'} className="w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5">
+                    <input name="description" defaultValue={modal.data?.description} placeholder="Descrição da Transação" className={inputClass} required />
+                    <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor" className={inputClass} required />
+                    <input name="date" type="date" defaultValue={modal.data?.date?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} required />
+                    <select name="type" defaultValue={modal.data?.type || 'saida'} className={inputClass}>
                       <option value="saida">Saída (Despesa)</option>
                       <option value="entrada">Entrada (Receita)</option>
                     </select>
                   </>
                 )}
+
                 <div className="pt-4 flex justify-end space-x-3">
-                  <button type="button" onClick={() => setModal({ isOpen: false, type: '', data: null })} className="px-4 py-2 text-slate-300">Cancelar</button>
-                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium">Salvar</button>
+                  <button type="button" onClick={() => setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' })} className="px-4 py-2 text-slate-300 hover:text-white transition-colors">Cancelar</button>
+                  <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors">Salvar</button>
                 </div>
               </form>
-            </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
