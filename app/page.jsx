@@ -9,7 +9,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const formatMoney = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(parseFloat(value) || 0);
-const formatDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+const formatDate = (d) => {
+  if (!d) return '—';
+  try {
+    // MySQL pode retornar Date object ou ISO string ou 'YYYY-MM-DD'
+    const str = typeof d === 'string' ? d : d.toISOString?.() || String(d);
+    const clean = str.includes('T') ? str.split('T')[0] : str;
+    const [y, m, day] = clean.split('-');
+    if (!y || !m || !day) return '—';
+    return `${day}/${m}/${y}`;
+  } catch { return '—'; }
+};
 const today = () => new Date().toISOString().split('T')[0];
 
 export const HoverEffect = ({ items, className }) => {
@@ -432,15 +442,15 @@ export default function App() {
         </div>
       </div>
 
-      <main className="pt-28 max-w-7xl mx-auto px-6 md:px-8 space-y-8">
+      <main className="pt-20 md:pt-28 max-w-7xl mx-auto px-3 md:px-8 space-y-6 md:space-y-8">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-white capitalize">
-            {activeTab === 'fluxo' ? 'Fluxo de Caixa' : activeTab === 'painel' ? 'Painel de Controle' : activeTab === 'funcionarios' ? 'Funcionários' : activeTab}
+          <h1 className="text-2xl md:text-3xl font-bold text-white capitalize">
+            {activeTab === 'fluxo' ? 'Fluxo de Caixa' : activeTab === 'painel' ? 'Painel' : activeTab === 'funcionarios' ? 'Funcionários' : activeTab}
           </h1>
           {(activeTab === 'clientes' || activeTab === 'funcionarios') && (
             <button
               onClick={() => setModal({ isOpen: true, type: activeTab === 'clientes' ? 'client' : 'employee', data: null, parentId: null, parentName: '' })}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-colors"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-500/20 transition-colors"
             >
               <Plus className="w-4 h-4" /><span>{activeTab === 'clientes' ? 'Novo Cliente' : 'Novo Funcionário'}</span>
             </button>
@@ -448,7 +458,7 @@ export default function App() {
           {activeTab === 'fluxo' && (
             <button
               onClick={() => setModal({ isOpen: true, type: 'transaction', data: null, parentId: null, parentName: '' })}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 transition-colors"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-blue-500/20 transition-colors"
             >
               <Plus className="w-4 h-4" /><span>Nova Transação</span>
             </button>
@@ -461,82 +471,87 @@ export default function App() {
             <HoverEffect items={kpiItems} className="-mx-2" />
 
             {/* A Receber dos Clientes */}
-            <div className="mt-8 space-y-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="space-y-3">
+              <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                 <TrendingUp className="text-emerald-400 w-5 h-5" /> A Receber dos Clientes
               </h2>
-              <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-                <table className="w-full text-left border-collapse">
-                  <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Cliente</th><th className="p-4">Descrição</th><th className="p-4">Vencimento</th><th className="p-4">Status</th><th className="p-4 text-right">Valor</th><th className="p-4 text-right">Ação</th></tr></thead>
-                  <tbody className="divide-y divide-white/5">
-                    {pendingReceivables.length === 0 && (
-                      <tr><td colSpan="6" className="p-8 text-center text-slate-500 italic">Nenhuma cobrança pendente.</td></tr>
-                    )}
-                    {pendingReceivables.map(r => (
-                      <tr key={r.id}>
-                        <td className="p-4 text-white font-medium">{r.client_name}</td>
-                        <td className="p-4 text-slate-400">{r.description}</td>
-                        <td className="p-4 text-slate-400">{formatDate(r.due_date)}</td>
-                        <td className="p-4"><StatusBadge status={r.status} /></td>
-                        <td className="p-4 text-right text-emerald-400 font-mono font-semibold">{formatMoney(r.amount)}</td>
-                        <td className="p-4 text-right">
-                          <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors">Receber</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {pendingReceivables.length === 0 ? (
+                <div className="bg-white/5 rounded-2xl p-6 text-center text-slate-500 italic border border-white/5 text-sm">Nenhuma cobrança pendente.</div>
+              ) : (
+                <div className="space-y-2">
+                  {pendingReceivables.map(r => (
+                    <div key={r.id} className="bg-white/5 rounded-xl border border-white/5 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-white font-semibold truncate">{r.client_name}</p>
+                          <p className="text-slate-400 text-xs mt-0.5 truncate">{r.description}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <StatusBadge status={r.status} />
+                            <span className="text-slate-500 text-xs">{formatDate(r.due_date)}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className="text-emerald-400 font-mono font-bold text-sm">{formatMoney(r.amount)}</span>
+                          <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors whitespace-nowrap">Receber</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* A Pagar aos Funcionários */}
-            <div className="mt-8 space-y-4">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="space-y-3">
+              <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                 <Briefcase className="text-orange-400 w-5 h-5" /> A Pagar aos Funcionários
               </h2>
-              <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-                <table className="w-full text-left border-collapse">
-                  <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Funcionário</th><th className="p-4">Cargo</th><th className="p-4">Descrição</th><th className="p-4">Status</th><th className="p-4 text-right">Valor</th><th className="p-4 text-right">Ação</th></tr></thead>
-                  <tbody className="divide-y divide-white/5">
-                    {pendingEmpPayments.length === 0 && (
-                      <tr><td colSpan="6" className="p-8 text-center text-slate-500 italic">Nenhum pagamento pendente.</td></tr>
-                    )}
-                    {pendingEmpPayments.map(p => (
-                      <tr key={p.id}>
-                        <td className="p-4 text-white font-medium">{p.employee_name}</td>
-                        <td className="p-4 text-slate-400">{p.employee_role}</td>
-                        <td className="p-4 text-slate-400">{p.description}</td>
-                        <td className="p-4"><StatusBadge status={p.status} /></td>
-                        <td className="p-4 text-right text-rose-400 font-mono font-semibold">{formatMoney(p.amount)}</td>
-                        <td className="p-4 text-right">
-                          <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors">Pagar</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {pendingEmpPayments.length === 0 ? (
+                <div className="bg-white/5 rounded-2xl p-6 text-center text-slate-500 italic border border-white/5 text-sm">Nenhum pagamento pendente.</div>
+              ) : (
+                <div className="space-y-2">
+                  {pendingEmpPayments.map(p => (
+                    <div key={p.id} className="bg-white/5 rounded-xl border border-white/5 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-white font-semibold truncate">{p.employee_name}</p>
+                          <p className="text-slate-400 text-xs mt-0.5 truncate">{p.employee_role} · {p.description}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <StatusBadge status={p.status} />
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2 shrink-0">
+                          <span className="text-rose-400 font-mono font-bold text-sm">{formatMoney(p.amount)}</span>
+                          <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors whitespace-nowrap">Pagar</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Últimas transações */}
-            <div className="mt-8 space-y-4">
-              <h2 className="text-xl font-bold text-white">Últimas Transações</h2>
-              <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-                <table className="w-full text-left border-collapse">
-                  <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Data</th><th className="p-4">Descrição</th><th className="p-4">Tipo</th><th className="p-4 text-right">Valor</th></tr></thead>
-                  <tbody className="divide-y divide-white/5">
-                    {transactions.slice(0, 5).map(t => (
-                      <tr key={t.id}>
-                        <td className="p-4 text-slate-400">{formatDate(t.date?.split('T')[0] || t.date)}</td>
-                        <td className="p-4 text-white font-medium">{t.description}</td>
-                        <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.type}</span></td>
-                        <td className="p-4 text-right font-mono" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</td>
-                      </tr>
-                    ))}
-                    {transactions.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-500 italic">Nenhuma transação registrada.</td></tr>}
-                  </tbody>
-                </table>
-              </div>
+            <div className="space-y-3">
+              <h2 className="text-lg md:text-xl font-bold text-white">Últimas Transações</h2>
+              {transactions.length === 0 ? (
+                <div className="bg-white/5 rounded-2xl p-6 text-center text-slate-500 italic border border-white/5 text-sm">Nenhuma transação registrada.</div>
+              ) : (
+                <div className="space-y-2">
+                  {transactions.slice(0, 5).map(t => (
+                    <div key={t.id} className="bg-white/5 rounded-xl border border-white/5 px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-white font-medium text-sm truncate">{t.description}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">{formatDate(t.date)}</p>
+                      </div>
+                      <div className="flex flex-col items-end shrink-0">
+                        <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
+                        <span className={`text-[10px] uppercase font-bold mt-0.5 ${t.type === 'entrada' ? 'text-emerald-400' : 'text-rose-400'}`}>{t.type}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </>
         )}
@@ -577,28 +592,31 @@ export default function App() {
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="border-t border-white/5">
+                    <div className="border-t border-white/5 p-3 space-y-2">
                       {clientRecs.length === 0 ? (
-                        <p className="p-4 pl-14 text-slate-500 text-sm italic">Nenhuma cobrança registrada para este cliente.</p>
+                        <p className="text-slate-500 text-sm italic text-center py-2">Nenhuma cobrança registrada.</p>
                       ) : (
-                        <table className="w-full text-left">
-                          <thead><tr className="bg-[#0f1117]/60 text-slate-500 text-xs"><th className="py-2 pl-14 pr-4">Descrição</th><th className="py-2 px-4">Vencimento</th><th className="py-2 px-4">Status</th><th className="py-2 px-4 text-right">Valor</th><th className="py-2 px-4 text-right">Ação</th></tr></thead>
-                          <tbody className="divide-y divide-white/[0.03]">
-                            {clientRecs.map(r => (
-                              <tr key={r.id}>
-                                <td className="py-3 pl-14 pr-4 text-slate-300 text-sm">{r.description}</td>
-                                <td className="py-3 px-4 text-slate-400 text-sm">{formatDate(r.due_date)}</td>
-                                <td className="py-3 px-4"><StatusBadge status={r.status} /></td>
-                                <td className="py-3 px-4 text-right font-mono text-sm" style={{ color: r.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(r.amount)}</td>
-                                <td className="py-3 px-4 text-right space-x-1">
-                                  {r.status !== 'Pago' && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-2 py-1 rounded hover:bg-blue-500/10 transition-colors">Receber</button>}
-                                  <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} className="text-slate-400 hover:text-blue-400 p-1 rounded"><Edit2 className="w-3.5 h-3.5 inline" /></button>
-                                  <button onClick={() => handleDeleteReceivable(r)} className="text-slate-400 hover:text-rose-400 p-1 rounded"><Trash2 className="w-3.5 h-3.5 inline" /></button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        clientRecs.map(r => (
+                          <div key={r.id} className="bg-[#0f1117]/60 rounded-lg p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-slate-300 text-sm font-medium truncate">{r.description}</p>
+                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                  <StatusBadge status={r.status} />
+                                  <span className="text-slate-500 text-xs">{formatDate(r.due_date)}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <span className="font-mono text-sm font-semibold" style={{ color: r.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(r.amount)}</span>
+                                <div className="flex items-center gap-1">
+                                  {r.status !== 'Pago' && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-2 py-1 rounded hover:bg-blue-500/10">Receber</button>}
+                                  <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteReceivable(r)} className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
                       )}
                     </div>
                   )}
@@ -644,28 +662,31 @@ export default function App() {
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="border-t border-white/5">
+                    <div className="border-t border-white/5 p-3 space-y-2">
                       {empPays.length === 0 ? (
-                        <p className="p-4 pl-14 text-slate-500 text-sm italic">Nenhum pagamento registrado para este funcionário.</p>
+                        <p className="text-slate-500 text-sm italic text-center py-2">Nenhum pagamento registrado.</p>
                       ) : (
-                        <table className="w-full text-left">
-                          <thead><tr className="bg-[#0f1117]/60 text-slate-500 text-xs"><th className="py-2 pl-14 pr-4">Descrição</th><th className="py-2 px-4">Vencimento</th><th className="py-2 px-4">Status</th><th className="py-2 px-4 text-right">Valor</th><th className="py-2 px-4 text-right">Ação</th></tr></thead>
-                          <tbody className="divide-y divide-white/[0.03]">
-                            {empPays.map(p => (
-                              <tr key={p.id}>
-                                <td className="py-3 pl-14 pr-4 text-slate-300 text-sm">{p.description}</td>
-                                <td className="py-3 px-4 text-slate-400 text-sm">{formatDate(p.due_date)}</td>
-                                <td className="py-3 px-4"><StatusBadge status={p.status} /></td>
-                                <td className="py-3 px-4 text-right font-mono text-sm" style={{ color: p.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(p.amount)}</td>
-                                <td className="py-3 px-4 text-right space-x-1">
-                                  {p.status !== 'Pago' && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-2 py-1 rounded hover:bg-orange-500/10 transition-colors">Pagar</button>}
-                                  <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} className="text-slate-400 hover:text-blue-400 p-1 rounded"><Edit2 className="w-3.5 h-3.5 inline" /></button>
-                                  <button onClick={() => handleDeleteEmpPayment(p)} className="text-slate-400 hover:text-rose-400 p-1 rounded"><Trash2 className="w-3.5 h-3.5 inline" /></button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                        empPays.map(p => (
+                          <div key={p.id} className="bg-[#0f1117]/60 rounded-lg p-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-slate-300 text-sm font-medium truncate">{p.description}</p>
+                                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                  <StatusBadge status={p.status} />
+                                  <span className="text-slate-500 text-xs">{formatDate(p.due_date)}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end gap-2 shrink-0">
+                                <span className="font-mono text-sm font-semibold" style={{ color: p.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(p.amount)}</span>
+                                <div className="flex items-center gap-1">
+                                  {p.status !== 'Pago' && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-2 py-1 rounded hover:bg-orange-500/10">Pagar</button>}
+                                  <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteEmpPayment(p)} className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
                       )}
                     </div>
                   )}
@@ -677,25 +698,30 @@ export default function App() {
 
         {/* ===== FLUXO DE CAIXA ===== */}
         {activeTab === 'fluxo' && (
-          <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
-            <table className="w-full text-left border-collapse">
-              <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Data</th><th className="p-4">Descrição</th><th className="p-4">Tipo</th><th className="p-4">Valor</th><th className="p-4 text-right">Ação</th></tr></thead>
-              <tbody className="divide-y divide-white/5">
-                {transactions.map(t => (
-                  <tr key={t.id}>
-                    <td className="p-4 text-slate-400">{formatDate(t.date?.split('T')[0] || t.date)}</td>
-                    <td className="p-4 text-white font-medium">{t.description}</td>
-                    <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.type}</span></td>
-                    <td className="p-4 font-mono" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</td>
-                    <td className="p-4 text-right space-x-2">
-                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400"><Edit2 className="w-4 h-4 inline" /></button>
-                      <button onClick={() => handleDeleteTransaction(t)} className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
-                    </td>
-                  </tr>
-                ))}
-                {transactions.length === 0 && <tr><td colSpan="5" className="p-8 text-center text-slate-500 italic">Nenhuma transação registrada.</td></tr>}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {transactions.length === 0 && (
+              <div className="bg-white/5 rounded-2xl p-8 text-center text-slate-500 italic border border-white/5">Nenhuma transação registrada.</div>
+            )}
+            {transactions.map(t => (
+              <div key={t.id} className="bg-white/5 rounded-xl border border-white/5 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white font-medium text-sm truncate">{t.description}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.type}</span>
+                      <span className="text-slate-500 text-xs">{formatDate(t.date)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
+                    <div className="flex gap-1">
+                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteTransaction(t)} className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
