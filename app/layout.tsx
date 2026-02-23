@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "UpValor - Gestão Financeira",
-  description: "Sistema de gestão financeira empresarial",
+  description: "Sistema de gestão financeira — clientes, funcionários e fluxo de caixa",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "UpValor",
+  },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-512.png",
+  },
 };
 
 export default function RootLayout({
@@ -23,11 +34,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="pt-BR">
+      <head>
+        <meta name="theme-color" content="#3b82f6" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="UpValor" />
+        <link rel="apple-touch-icon" href="/icon-512.png" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
+        <Script id="sw-register" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                  .then(reg => console.log('SW registrado:', reg.scope))
+                  .catch(err => console.warn('SW erro:', err));
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   );
