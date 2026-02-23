@@ -14,6 +14,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Credenciais inválidas.' }, { status: 401 });
     }
   } catch (error) {
+    // 👇 ESTA É A LINHA NOVA QUE VAI MOSTRAR O VERDADEIRO PROBLEMA:
+    console.error("=== ERRO DETALHADO DA API DE LOGIN ===", error);
+    
     return NextResponse.json({ error: 'Erro no servidor' }, { status: 500 });
   }
 }
