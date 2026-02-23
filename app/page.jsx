@@ -475,13 +475,13 @@ export default function App() {
               <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                 <TrendingUp className="text-emerald-400 w-5 h-5" /> A Receber dos Clientes
               </h2>
-              {pendingReceivables.length === 0 ? (
-                <div className="bg-white/5 rounded-2xl p-6 text-center text-slate-500 italic border border-white/5 text-sm">Nenhuma cobrança pendente.</div>
-              ) : (
-                <div className="space-y-2">
-                  {pendingReceivables.map(r => (
-                    <div key={r.id} className="bg-white/5 rounded-xl border border-white/5 p-4">
-                      <div className="flex items-start justify-between gap-2">
+              <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
+                {pendingReceivables.length === 0 ? (
+                  <p className="p-6 text-center text-slate-500 italic text-sm">Nenhuma cobrança pendente.</p>
+                ) : (
+                  <div className="divide-y divide-white/5 max-h-72 overflow-y-auto">
+                    {pendingReceivables.map(r => (
+                      <div key={r.id} className="p-4 flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-white font-semibold truncate">{r.client_name}</p>
                           <p className="text-slate-400 text-xs mt-0.5 truncate">{r.description}</p>
@@ -495,10 +495,10 @@ export default function App() {
                           <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors whitespace-nowrap">Receber</button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* A Pagar aos Funcionários */}
@@ -506,13 +506,13 @@ export default function App() {
               <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                 <Briefcase className="text-orange-400 w-5 h-5" /> A Pagar aos Funcionários
               </h2>
-              {pendingEmpPayments.length === 0 ? (
-                <div className="bg-white/5 rounded-2xl p-6 text-center text-slate-500 italic border border-white/5 text-sm">Nenhum pagamento pendente.</div>
-              ) : (
-                <div className="space-y-2">
-                  {pendingEmpPayments.map(p => (
-                    <div key={p.id} className="bg-white/5 rounded-xl border border-white/5 p-4">
-                      <div className="flex items-start justify-between gap-2">
+              <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
+                {pendingEmpPayments.length === 0 ? (
+                  <p className="p-6 text-center text-slate-500 italic text-sm">Nenhum pagamento pendente.</p>
+                ) : (
+                  <div className="divide-y divide-white/5 max-h-72 overflow-y-auto">
+                    {pendingEmpPayments.map(p => (
+                      <div key={p.id} className="p-4 flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-white font-semibold truncate">{p.employee_name}</p>
                           <p className="text-slate-400 text-xs mt-0.5 truncate">{p.employee_role} · {p.description}</p>
@@ -525,33 +525,35 @@ export default function App() {
                           <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors whitespace-nowrap">Pagar</button>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Últimas transações */}
             <div className="space-y-3">
               <h2 className="text-lg md:text-xl font-bold text-white">Últimas Transações</h2>
-              {transactions.length === 0 ? (
-                <div className="bg-white/5 rounded-2xl p-6 text-center text-slate-500 italic border border-white/5 text-sm">Nenhuma transação registrada.</div>
-              ) : (
-                <div className="space-y-2">
-                  {transactions.slice(0, 5).map(t => (
-                    <div key={t.id} className="bg-white/5 rounded-xl border border-white/5 px-4 py-3 flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-white font-medium text-sm truncate">{t.description}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{formatDate(t.date)}</p>
+              <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
+                {transactions.length === 0 ? (
+                  <p className="p-6 text-center text-slate-500 italic text-sm">Nenhuma transação registrada.</p>
+                ) : (
+                  <div className="divide-y divide-white/5 max-h-72 overflow-y-auto">
+                    {transactions.slice(0, 5).map(t => (
+                      <div key={t.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-white font-medium text-sm truncate">{t.description}</p>
+                          <p className="text-slate-500 text-xs mt-0.5">{formatDate(t.date)}</p>
+                        </div>
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
+                          <span className={`text-[10px] uppercase font-bold mt-0.5 ${t.type === 'entrada' ? 'text-emerald-400' : 'text-rose-400'}`}>{t.type}</span>
+                        </div>
                       </div>
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
-                        <span className={`text-[10px] uppercase font-bold mt-0.5 ${t.type === 'entrada' ? 'text-emerald-400' : 'text-rose-400'}`}>{t.type}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </>
         )}
