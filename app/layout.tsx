@@ -23,8 +23,8 @@ export const metadata: Metadata = {
     title: "UpValor",
   },
   icons: {
-    icon: "/icon-192.png",
-    apple: "/icon-512.png",
+    icon: "/logo.png",
+    apple: "/logo.png",
   },
 };
 

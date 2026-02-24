@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   LayoutDashboard, Users, Briefcase, Wallet, Settings, LogOut,
   TrendingUp, TrendingDown, AlertCircle, Plus, Edit2, Trash2, ChevronDown, ChevronUp, DollarSign
@@ -48,7 +48,83 @@ export const HoverEffect = ({ items, className }) => {
   );
 };
 
+// Componente do background líquido animado
+function LiquidCanvas() {
+  const canvasRef = useRef(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let animId;
+    let blobs = [];
+    const mouse = { x: undefined, y: undefined };
+    const COLORS = ['#38bdf8', '#818cf8', '#2dd4bf', '#6366f1'];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    class Blob {
+      constructor() {
+        this.radius = Math.random() * 150 + 100;
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 2;
+        this.vy = (Math.random() - 0.5) * 2;
+        this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (mouse.x !== undefined) {
+          const dx = mouse.x - this.x, dy = mouse.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 400) { this.x += dx * 0.01; this.y += dy * 0.01; }
+        }
+        if (this.x < -this.radius) this.x = canvas.width + this.radius;
+        if (this.x > canvas.width + this.radius) this.x = -this.radius;
+        if (this.y < -this.radius) this.y = canvas.height + this.radius;
+        if (this.y > canvas.height + this.radius) this.y = -this.radius;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+
+    resize();
+    blobs = Array.from({ length: 8 }, () => new Blob());
+
+    function animate() {
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      blobs.forEach(b => { b.update(); b.draw(); });
+      animId = requestAnimationFrame(animate);
+    }
+    animate();
+
+    const onMouse = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', onMouse);
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('mousemove', onMouse);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, filter: "url('#goo')", background: '#0f172a' }}
+    />
+  );
+}
+
 const inputClass = "w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500";
+
 const StatusBadge = ({ status }) => {
   const map = {
     'Pago': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -377,13 +453,30 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-slate-900 to-black flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: '#0f172a' }}>
+        {/* SVG Gooey Filter */}
+        <svg style={{ position: 'absolute', visibility: 'hidden', width: 0, height: 0 }}>
+          <defs>
+            <filter id="goo">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="40" result="blur" />
+              <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 80 -20" result="goo" />
+              <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+            </filter>
+          </defs>
+        </svg>
+
+        {/* Canvas com blobs líquidos */}
+        <LiquidCanvas />
+
+        {/* Overlay de vidro */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1, background: 'rgba(15,23,42,0.25)', backdropFilter: 'blur(40px) saturate(120%)', pointerEvents: 'none' }} />
+
+        {/* Card de login */}
+        <div className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-tr from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30">
-              <TrendingUp className="text-white w-8 h-8" />
+            <div className="w-40 h-auto mb-2">
+              <img src="/logo.png" alt="UpValor" className="w-full h-auto object-contain drop-shadow-xl" />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">UpValor</h1>
           </div>
           {loginError && <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">{loginError}</div>}
           {isLoginMode ? (
