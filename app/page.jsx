@@ -611,7 +611,7 @@ export default function App() {
                 <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                   <TrendingUp className="text-emerald-400 w-5 h-5" /> A Receber dos Clientes
                 </h2>
-                <div className="flex bg-[#151821] border border-white/5 rounded-lg p-1">
+                <div className="flex justify-center w-full md:w-auto bg-[#151821] border border-white/5 rounded-lg p-1">
                   {['Semanal', 'Mensal', 'Trimestral'].map(p => (
                     <button
                       key={p}
@@ -742,7 +742,7 @@ export default function App() {
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="border-t border-white/5 p-3 space-y-2">
+                    <div className="border-t border-white/5 p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
                       {clientRecs.length === 0 ? (
                         <p className="text-slate-500 text-sm italic text-center py-2">Nenhuma cobrança registrada.</p>
                       ) : (
@@ -812,7 +812,7 @@ export default function App() {
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="border-t border-white/5 p-3 space-y-2">
+                    <div className="border-t border-white/5 p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
                       {empPays.length === 0 ? (
                         <p className="text-slate-500 text-sm italic text-center py-2">Nenhum pagamento registrado.</p>
                       ) : (
