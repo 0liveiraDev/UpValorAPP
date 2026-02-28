@@ -5,7 +5,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
-    const [clients] = await pool.query('SELECT * FROM clients WHERE user_id = ? ORDER BY dueDate ASC', [userId]);
+    const [clients] = await pool.query('SELECT * FROM clients WHERE user_id = ? ORDER BY name ASC', [userId]);
 
     return NextResponse.json(clients);
   } catch (error) {
@@ -18,8 +18,8 @@ export async function POST(request) {
   try {
     const data = await request.json();
     const result = await pool.query(
-      'INSERT INTO clients (user_id, name, amount, dueDate, status) VALUES (?, ?, ?, ?, ?)',
-      [data.userId, data.name, data.amount || 0, data.dueDate || null, data.status || 'Pendente']
+      'INSERT INTO clients (user_id, name) VALUES (?, ?)',
+      [data.userId, data.name]
     );
 
     return NextResponse.json({ id: result[0].insertId, ...data }, { status: 201 });
@@ -33,8 +33,8 @@ export async function PUT(request) {
   try {
     const data = await request.json();
     await pool.query(
-      'UPDATE clients SET name = ?, amount = ?, dueDate = ?, status = ? WHERE id = ? AND user_id = ?',
-      [data.name, data.amount || 0, data.dueDate || null, data.status || 'Pendente', data.id, data.userId]
+      'UPDATE clients SET name = ? WHERE id = ? AND user_id = ?',
+      [data.name, data.id, data.userId]
     );
     return NextResponse.json({ success: true });
   } catch (error) {
