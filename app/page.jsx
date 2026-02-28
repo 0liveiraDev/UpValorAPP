@@ -134,6 +134,37 @@ const StatusBadge = ({ status }) => {
   return <span className={`px-3 py-1 rounded-full text-xs font-medium border ${map[status] || map['Pendente']}`}>{status}</span>;
 };
 
+const isWithinPeriod = (dateStr, period) => {
+  if (!dateStr) return false;
+  try {
+    const [y, m, d] = typeof dateStr === 'string' ? dateStr.split('T')[0].split('-') : dateStr.toISOString().split('T')[0].split('-');
+    if (!y || !m || !d) return false;
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    if (period === 'Semanal') {
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      return date >= startOfWeek && date <= endOfWeek;
+    }
+    if (period === 'Mensal') {
+      return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+    }
+    if (period === 'Trimestral') {
+      const todayYear = today.getFullYear();
+      const todayMonth = today.getMonth();
+      const dateYear = date.getFullYear();
+      const dateMonth = date.getMonth();
+      const monthsDiff = (dateYear - todayYear) * 12 + (dateMonth - todayMonth);
+      return monthsDiff >= 0 && monthsDiff <= 2;
+    }
+    return true;
+  } catch { return true; }
+};
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -154,6 +185,7 @@ export default function App() {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [expandedClients, setExpandedClients] = useState({});
   const [expandedEmployees, setExpandedEmployees] = useState({});
+  const [periodFilter, setPeriodFilter] = useState('Mensal');
 
   // --- PERSISTÊNCIA DE LOGIN ---
   useEffect(() => {
@@ -433,14 +465,15 @@ export default function App() {
 
   // --- KPIS ---
   const kpis = useMemo(() => {
-    const aReceber = receivables.filter(r => r.status !== 'Pago').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    const periodReceivables = receivables.filter(r => isWithinPeriod(r.due_date || r.dueDate, periodFilter));
+    const aReceber = periodReceivables.filter(r => r.status !== 'Pago').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const vencido = receivables.filter(r => r.status === 'Atrasado').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const folhaSalarial = empPayments.filter(p => p.status === 'Pendente').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const entradas = transactions.filter(t => t.type === 'entrada').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const saidas = transactions.filter(t => t.type === 'saida').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
     const saldo = entradas - saidas;
     return { aReceber, vencido, folhaSalarial, saldo };
-  }, [receivables, empPayments, transactions]);
+  }, [receivables, empPayments, transactions, periodFilter]);
 
   const kpiItems = [
     { id: "saldo", title: "Saldo Atual", value: formatMoney(kpis.saldo), icon: <Wallet className="text-blue-400 w-5 h-5" /> },
@@ -510,7 +543,7 @@ export default function App() {
   ];
 
   // Cobranças pendentes/atrasadas para o dashboard
-  const pendingReceivables = receivables.filter(r => r.status !== 'Pago');
+  const pendingReceivables = receivables.filter(r => r.status !== 'Pago' && isWithinPeriod(r.due_date || r.dueDate, periodFilter));
   const pendingEmpPayments = empPayments.filter(p => p.status === 'Pendente');
 
   return (
@@ -565,9 +598,22 @@ export default function App() {
 
             {/* A Receber dos Clientes */}
             <div className="space-y-3">
-              <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                <TrendingUp className="text-emerald-400 w-5 h-5" /> A Receber dos Clientes
-              </h2>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+                  <TrendingUp className="text-emerald-400 w-5 h-5" /> A Receber dos Clientes
+                </h2>
+                <div className="flex bg-[#151821] border border-white/5 rounded-lg p-1">
+                  {['Semanal', 'Mensal', 'Trimestral'].map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriodFilter(p)}
+                      className={cn("px-3 py-1.5 text-xs font-medium rounded-md transition-colors", periodFilter === p ? "bg-emerald-500/20 text-emerald-400" : "text-slate-400 hover:text-white")}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
                 {pendingReceivables.length === 0 ? (
                   <p className="p-6 text-center text-slate-500 italic text-sm">Nenhuma cobrança pendente.</p>
