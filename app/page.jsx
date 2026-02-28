@@ -208,24 +208,33 @@ export default function App() {
   // --- BUSCAR DADOS DO BANCO ---
   const loadData = async () => {
     if (!currentUser) return;
-    try {
-      const [cliRes, recRes, empRes, payRes, traRes, usrRes] = await Promise.all([
-        fetch(`/api/clients?userId=${currentUser.id}`),
-        fetch(`/api/clients/receivables?userId=${currentUser.id}`),
-        fetch(`/api/employees?userId=${currentUser.id}`),
-        fetch(`/api/employees/payments?userId=${currentUser.id}`),
-        fetch(`/api/transactions?userId=${currentUser.id}`),
-        fetch('/api/users')
-      ]);
-      setClients(await cliRes.json());
-      setReceivables(await recRes.json());
-      setEmployees(await empRes.json());
-      setEmpPayments(await payRes.json());
-      setTransactions(await traRes.json());
-      setUsers(await usrRes.json());
-    } catch (error) {
-      console.error("Erro ao carregar dados", error);
-    }
+
+    // Função helper para lidar com o json seguro e garantir arrays
+    const safeFetch = async (url, setter) => {
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = await res.json();
+          setter(Array.isArray(data) ? data : []);
+        } else {
+          console.warn(`Erro ao carregar da URL ${url}:`, res.status);
+          setter([]);
+        }
+      } catch (error) {
+        console.error(`Falha no fetch para ${url}:`, error);
+        setter([]);
+      }
+    };
+
+    // Buscas independentes: Desta forma se uma der 404/500, a outra continua carregando
+    await Promise.allSettled([
+      safeFetch(`/api/clients?userId=${currentUser.id}`, setClients),
+      safeFetch(`/api/clients/receivables?userId=${currentUser.id}`, setReceivables),
+      safeFetch(`/api/employees?userId=${currentUser.id}`, setEmployees),
+      safeFetch(`/api/employees/payments?userId=${currentUser.id}`, setEmpPayments),
+      safeFetch(`/api/transactions?userId=${currentUser.id}`, setTransactions),
+      safeFetch('/api/users', setUsers)
+    ]);
   };
 
   useEffect(() => {
