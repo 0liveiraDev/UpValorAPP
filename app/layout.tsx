@@ -34,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" translate="no">
+    <html lang="pt-BR" translate="no" suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
         <meta name="theme-color" content="#3b82f6" />
@@ -45,7 +45,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-512.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
         <Script id="sw-register" strategy="afterInteractive">
           {`

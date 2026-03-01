@@ -191,6 +191,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('painel');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   // Dados
   const [clients, setClients] = useState([]);
@@ -207,6 +208,10 @@ export default function App() {
   const [expandedClients, setExpandedClients] = useState({});
   const [expandedEmployees, setExpandedEmployees] = useState({});
   const [periodFilter, setPeriodFilter] = useState('Mensal');
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // --- PERSISTÊNCIA DE LOGIN ---
   useEffect(() => {
@@ -622,7 +627,7 @@ export default function App() {
         </div>
 
         {/* ===== PAINEL ===== */}
-        {activeTab === 'painel' && (
+        {activeTab === 'painel' && isClient && (
           <>
             <HoverEffect items={kpiItems} className="-mx-2" />
 
