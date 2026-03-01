@@ -181,7 +181,9 @@ const isWithinPeriod = (dateVal, period) => {
       return monthsDiff >= 0 && monthsDiff <= 2;
     }
     return true;
-  } catch { return true; }
+  } catch (err) {
+    return true;
+  }
 };
 
 export default function App() {
@@ -577,7 +579,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0f1117] text-slate-200 font-sans relative pb-32">
       <div className="fixed top-4 right-4 z-50 flex items-center bg-[#151821]/80 backdrop-blur-md p-1.5 rounded-full border border-white/5 shadow-xl">
-        <span className="text-sm font-medium text-white mr-3 ml-4">{currentUser.name}</span>
+        <span className="text-sm font-medium text-white mr-3 ml-4">{currentUser?.name || "Usuário"}</span>
         <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-400 rounded-full bg-white/5 mr-1"><LogOut className="w-4 h-4" /></button>
       </div>
 
@@ -906,7 +908,7 @@ export default function App() {
                     <td className="p-4 text-slate-400">{u.email}</td>
                     <td className="p-4 capitalize">{u.role}</td>
                     <td className="p-4 text-right">
-                      {u.id !== currentUser.id && (
+                      {u.id !== currentUser?.id && (
                         <button onClick={() => handleDeleteUser(u.id)} className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
                       )}
                     </td>
