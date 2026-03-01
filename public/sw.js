@@ -1,5 +1,5 @@
 // Service Worker para UpValor PWA
-const CACHE_NAME = 'upvalor-v2';
+const CACHE_NAME = 'upvalor-v3';
 const STATIC_ASSETS = [
     '/',
     '/manifest.json',
