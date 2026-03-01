@@ -12,13 +12,17 @@ const formatMoney = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency
 const formatDate = (d) => {
   if (!d) return '—';
   try {
-    // MySQL pode retornar Date object ou ISO string ou 'YYYY-MM-DD'
-    const str = typeof d === 'string' ? d : d.toISOString?.() || String(d);
-    const clean = str.includes('T') ? str.split('T')[0] : str;
-    const [y, m, day] = clean.split('-');
-    if (!y || !m || !day) return '—';
+    const str = typeof d === 'string' ? d : (d instanceof Date && !isNaN(d) ? d.toISOString() : String(d));
+    if (!str || str === 'null' || str.includes('0000-00-00')) return '—';
+    const clean = str.includes('T') ? str.split('T')[0] : str.split(' ')[0];
+    const parts = clean.split('-');
+    if (parts.length < 3) return '—';
+    const [y, m, day] = parts;
+    if (!y || !m || !day || y.includes('NaN')) return '—';
     return `${day}/${m}/${y}`;
-  } catch { return '—'; }
+  } catch (err) {
+    return '—';
+  }
 };
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -134,12 +138,27 @@ const StatusBadge = ({ status }) => {
   return <span className={`px-3 py-1 rounded-full text-xs font-medium border ${map[status] || map['Pendente']}`}>{status}</span>;
 };
 
-const isWithinPeriod = (dateStr, period) => {
-  if (!dateStr) return false;
+const isWithinPeriod = (dateVal, period) => {
+  if (!dateVal) return false;
   try {
-    const [y, m, d] = typeof dateStr === 'string' ? dateStr.split('T')[0].split('-') : dateStr.toISOString().split('T')[0].split('-');
-    if (!y || !m || !d) return false;
+    let y, m, d;
+    if (typeof dateVal === 'string') {
+      const clean = dateVal.includes('T') ? dateVal.split('T')[0] : dateVal.split(' ')[0];
+      const parts = clean.split('-');
+      if (parts.length < 3) return false;
+      [y, m, d] = parts;
+    } else if (dateVal instanceof Date && !isNaN(dateVal)) {
+      y = dateVal.getFullYear();
+      m = dateVal.getMonth() + 1;
+      d = dateVal.getDate();
+    } else {
+      return false;
+    }
+
+    if (!y || !m || !d || String(y).includes('NaN')) return false;
     const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+    if (isNaN(date)) return false;
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
