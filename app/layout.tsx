@@ -51,9 +51,24 @@ export default function RootLayout({
           {`
             if ('serviceWorker' in navigator) {
               window.addEventListener('load', function() {
+                // Limpar caches antigos imediatamente
+                if ('caches' in window) {
+                  caches.keys().then(function(names) {
+                    names.forEach(function(name) {
+                      if (name !== 'upvalor-v4') {
+                        caches.delete(name);
+                        console.log('Cache removido:', name);
+                      }
+                    });
+                  });
+                }
+                // Registrar SW e forçar update
                 navigator.serviceWorker.register('/sw.js')
-                  .then(reg => console.log('SW registrado:', reg.scope))
-                  .catch(err => console.warn('SW erro:', err));
+                  .then(function(reg) {
+                    console.log('SW registrado:', reg.scope);
+                    reg.update();
+                  })
+                  .catch(function(err) { console.warn('SW erro:', err); });
               });
             }
           `}
