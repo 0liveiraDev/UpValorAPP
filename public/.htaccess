@@ -1,0 +1,24 @@
+# Desabilitar LiteSpeed Cache para aplicação Next.js
+<IfModule LiteSpeed>
+  CacheLookup off
+</IfModule>
+
+# Headers anti-cache para todas as páginas HTML
+<IfModule mod_headers.c>
+  # Não cachear HTML
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # Permitir cache apenas para assets estáticos (imagens, fontes)
+  <FilesMatch "\.(ico|jpg|jpeg|png|gif|svg|webp|woff|woff2|ttf|eot)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>
+
+# Desabilitar LiteSpeed Cache via header
+<IfModule mod_headers.c>
+  Header set X-LiteSpeed-Cache-Control "no-cache"
+</IfModule>
