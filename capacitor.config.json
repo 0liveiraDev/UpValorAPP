@@ -3,7 +3,7 @@
     "appName": "UpValor",
     "webDir": "out",
     "server": {
-        "url": "https://upvalor.com.br",
+        "url": "https://www.dashboard.upvaloragencia.com.br",
         "cleartext": false
     },
     "plugins": {
