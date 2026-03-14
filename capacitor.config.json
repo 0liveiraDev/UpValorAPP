@@ -1,0 +1,16 @@
+{
+    "appId": "com.upvalor.app",
+    "appName": "UpValor",
+    "webDir": "out",
+    "server": {
+        "url": "https://upvalor.com.br",
+        "cleartext": false
+    },
+    "plugins": {
+        "SplashScreen": {
+            "launchShowDuration": 2000,
+            "backgroundColor": "#0d0f14",
+            "showSpinner": false
+        }
+    }
+}
