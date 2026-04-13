@@ -16,6 +16,7 @@ export async function POST(request) {
     
     return NextResponse.json({ user: { id: result.insertId, name, email, role: 'user' } });
   } catch (error) {
-    return NextResponse.json({ error: 'Erro no servidor' }, { status: 500 });
+    console.error('[API Register POST Error]:', error);
+    return NextResponse.json({ error: 'Erro no servidor ao registrar usuário' }, { status: 500 });
   }
 }

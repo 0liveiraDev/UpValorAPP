@@ -9,8 +9,8 @@ export async function GET(request) {
 
     return NextResponse.json(clients);
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch clients' }, { status: 500 });
+    console.error('[API Clients GET Error]:', error);
+    return NextResponse.json({ error: 'Erro ao buscar clientes' }, { status: 500 });
   }
 }
 
@@ -24,8 +24,8 @@ export async function POST(request) {
 
     return NextResponse.json({ id: result[0].insertId, ...data }, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to create client' }, { status: 500 });
+    console.error('[API Clients POST Error]:', error);
+    return NextResponse.json({ error: 'Erro ao criar cliente' }, { status: 500 });
   }
 }
 
@@ -38,15 +38,20 @@ export async function PUT(request) {
     );
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to update client' }, { status: 500 });
+    console.error('[API Clients PUT Error]:', error);
+    return NextResponse.json({ error: 'Erro ao atualizar cliente' }, { status: 500 });
   }
 }
 
 export async function DELETE(request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get('id');
-  // ON DELETE CASCADE vai apagar client_receivables automaticamente
-  await pool.query('DELETE FROM clients WHERE id = ?', [id]);
-  return NextResponse.json({ success: true });
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    // ON DELETE CASCADE vai apagar client_receivables automaticamente
+    await pool.query('DELETE FROM clients WHERE id = ?', [id]);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[API Clients DELETE Error]:', error);
+    return NextResponse.json({ error: 'Erro ao excluir cliente' }, { status: 500 });
+  }
 }
