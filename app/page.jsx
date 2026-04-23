@@ -33,7 +33,7 @@ const today = () => new Date().toISOString().split('T')[0];
 export const HoverEffect = ({ items, className }) => {
   let [hoveredIndex, setHoveredIndex] = useState(null);
   return (
-    <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4", className)}>
+    <div className={cn("grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4", className)}>
       {items.map((item, idx) => (
         <div key={item?.id} className="relative group block p-2 h-full w-full" onMouseEnter={() => setHoveredIndex(idx)} onMouseLeave={() => setHoveredIndex(null)}>
           <AnimatePresence>
@@ -48,6 +48,16 @@ export const HoverEffect = ({ items, className }) => {
                 {item.icon}
               </div>
               <h3 className="text-3xl font-bold text-white mt-4">{item.value}</h3>
+              {item.subItems && (
+                <div className="mt-3 pt-3 border-t border-white/5 space-y-1">
+                  {item.subItems.map((sub, i) => (
+                    <div key={i} className="flex justify-between text-xs">
+                      <span className="text-slate-500">{sub.label}</span>
+                      <span className={cn("font-mono font-medium", sub.color)}>{sub.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -196,6 +206,17 @@ const isDateInScope = (dateVal, periodFilter, selectedYear, selectedMonth) => {
   }
 };
 
+// Extrai valores de gestão e tráfego da descrição unificada
+// Ex: "Gestão: R$500.00 | Tráfego: R$800.00 (1/12)" → { gestao: 500, trafego: 800 }
+function parseDescValues(desc) {
+  const gestaoMatch = desc?.match(/Gest[ãa]o:\s*R\$([\d.,]+)/);
+  const trafegoMatch = desc?.match(/Tr[áa]fego:\s*R\$([\d.,]+)/);
+  return {
+    gestao: gestaoMatch ? parseFloat(gestaoMatch[1].replace(',', '.')) : 0,
+    trafego: trafegoMatch ? parseFloat(trafegoMatch[1].replace(',', '.')) : 0,
+  };
+}
+
 // Calcula faturamento/gastos por mês para gráficos
 function buildChartData(receivables, empPayments, months = 6) {
   const now = new Date();
@@ -204,14 +225,20 @@ function buildChartData(receivables, empPayments, months = 6) {
     const y = d.getFullYear();
     const m = d.getMonth();
     const label = MONTHS_PT[m].slice(0, 3);
-    const faturamento = receivables
-      .filter(r => r.category !== 'trafego' && r.status === 'Pago')
-      .filter(r => { const rd = new Date(r.due_date || r.dueDate); return rd.getFullYear() === y && rd.getMonth() === m; })
-      .reduce((a, b) => a + parseFloat(b.amount), 0);
-    const trafego = receivables
-      .filter(r => r.category === 'trafego')
-      .filter(r => { const rd = new Date(r.due_date || r.dueDate); return rd.getFullYear() === y && rd.getMonth() === m; })
-      .reduce((a, b) => a + parseFloat(b.amount), 0);
+    const monthRecs = receivables.filter(r => {
+      const rd = new Date(r.due_date || r.dueDate); return rd.getFullYear() === y && rd.getMonth() === m;
+    });
+    const paidRecs = monthRecs.filter(r => r.status === 'Pago');
+    let faturamento = 0, trafego = 0;
+    paidRecs.forEach(r => {
+      const parsed = parseDescValues(r.description);
+      if (parsed.gestao > 0 || parsed.trafego > 0) {
+        faturamento += parsed.gestao;
+        trafego += parsed.trafego;
+      } else {
+        faturamento += parseFloat(r.amount);
+      }
+    });
     const pessoal = empPayments
       .filter(p => { const pd = new Date(p.due_date || p.dueDate); return pd.getFullYear() === y && pd.getMonth() === m; })
       .reduce((a, b) => a + parseFloat(b.amount), 0);
@@ -595,23 +622,48 @@ export default function App() {
   const kpis = useMemo(() => {
     // Filtrar pelo escopo temporal escolhido (Semanal, Mensal, Trimestral)
     const scopeRecs = receivables.filter(r => isDateInScope(r.due_date || r.dueDate, periodFilter, selectedYear, selectedMonth));
-    const aReceber = scopeRecs.filter(r => r.status !== 'Pago' && r.category !== 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
-    const aReceberTotal = scopeRecs.filter(r => r.status !== 'Pago').reduce((a, b) => a + parseFloat(b.amount), 0);
+    
+    // Discriminar gestão vs tráfego via parsing da descrição
+    let gestaoAReceber = 0, trafegoAReceber = 0;
+    let gestaoRecebido = 0, trafegoRecebido = 0;
+    scopeRecs.forEach(r => {
+      const parsed = parseDescValues(r.description);
+      const amt = parseFloat(r.amount);
+      if (parsed.gestao > 0 || parsed.trafego > 0) {
+        if (r.status !== 'Pago') { gestaoAReceber += parsed.gestao; trafegoAReceber += parsed.trafego; }
+        else { gestaoRecebido += parsed.gestao; trafegoRecebido += parsed.trafego; }
+      } else {
+        // Cobranças antigas sem parsing (antes da unificação)
+        if (r.status !== 'Pago') gestaoAReceber += amt;
+        else gestaoRecebido += amt;
+      }
+    });
+    
+    const totalAReceber = gestaoAReceber + trafegoAReceber;
+    const totalRecebido = gestaoRecebido + trafegoRecebido;
     const vencido = receivables.filter(r => r.status === 'Atrasado').reduce((a, b) => a + parseFloat(b.amount), 0);
     const folhaMes = empPayments.filter(p => p.status === 'Pendente' && isDateInScope(p.due_date || p.dueDate, periodFilter, selectedYear, selectedMonth)).reduce((a, b) => a + parseFloat(b.amount), 0);
-    const trafego = scopeRecs.filter(r => r.category === 'trafego' && r.status !== 'Pago').reduce((a, b) => a + parseFloat(b.amount), 0);
     const entradas = transactions.filter(t => t.type === 'entrada').reduce((a, b) => a + parseFloat(b.amount), 0);
     const saidas = transactions.filter(t => t.type === 'saida').reduce((a, b) => a + parseFloat(b.amount), 0);
     const saldo = entradas - saidas;
     const contratosAtivos = clients.filter(c => c.contract_status === 'Ativo').length;
     const contratosVencidos = clients.filter(c => c.contract_status === 'Vencido').length;
-    return { aReceber, aReceberTotal, vencido, folhaMes, trafego, saldo, contratosAtivos, contratosVencidos };
+    return { gestaoAReceber, trafegoAReceber, totalAReceber, gestaoRecebido, trafegoRecebido, totalRecebido, vencido, folhaMes, saldo, contratosAtivos, contratosVencidos };
   }, [receivables, empPayments, transactions, clients, selectedYear, selectedMonth, periodFilter]);
 
   const kpiItems = [
-    { id: "saldo", title: "Saldo Atual", value: formatMoney(kpis.saldo), icon: <Wallet className="text-blue-400 w-5 h-5" /> },
-    { id: "receber", title: "Gestão a Receber", value: formatMoney(kpis.aReceber), icon: <TrendingUp className="text-emerald-400 w-5 h-5" /> },
-    { id: "trafego", title: "Tráfego Pendente", value: formatMoney(kpis.trafego), icon: <BarChart2 className="text-purple-400 w-5 h-5" /> },
+    { id: "saldo", title: "Saldo Atual", value: formatMoney(kpis.saldo), icon: <Wallet className="text-blue-400 w-5 h-5" />,
+      subItems: [
+        { label: "Gestão", value: formatMoney(kpis.gestaoRecebido), color: "text-emerald-400" },
+        { label: "Tráfego", value: formatMoney(kpis.trafegoRecebido), color: "text-purple-400" },
+      ]
+    },
+    { id: "receber", title: "Total a Receber", value: formatMoney(kpis.totalAReceber), icon: <TrendingUp className="text-emerald-400 w-5 h-5" />,
+      subItems: [
+        { label: "Gestão", value: formatMoney(kpis.gestaoAReceber), color: "text-emerald-400" },
+        { label: "Tráfego", value: formatMoney(kpis.trafegoAReceber), color: "text-purple-400" },
+      ]
+    },
     { id: "folha", title: "Folha do Mês", value: formatMoney(kpis.folhaMes), icon: <Briefcase className="text-orange-400 w-5 h-5" /> }
   ];
 
