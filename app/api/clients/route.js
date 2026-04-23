@@ -86,8 +86,8 @@ export const POST = withErrorBoundary('clients.POST', async (request) => {
       const datasGestao = gerarDatas(data.contract_start, data.payment_frequency || 'Mensal', data.contract_months || 1);
       for (let i = 0; i < datasGestao.length; i++) {
         await conn.query(
-          `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status, category)
-           VALUES (?, ?, ?, ?, ?, 'Pendente', 'gestao')`,
+          `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
+           VALUES (?, ?, ?, ?, ?, 'Pendente')`,
           [clientId, data.userId, `Gestão ${i + 1}/${datasGestao.length}`, data.monthly_fee, datasGestao[i]]
         );
       }
@@ -98,8 +98,8 @@ export const POST = withErrorBoundary('clients.POST', async (request) => {
       const datasTrafico = gerarDatas(data.contract_start, data.traffic_frequency || 'Mensal', data.contract_months || 1);
       for (let i = 0; i < datasTrafico.length; i++) {
         await conn.query(
-          `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status, category)
-           VALUES (?, ?, ?, ?, ?, 'Pendente', 'trafego')`,
+          `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
+           VALUES (?, ?, ?, ?, ?, 'Pendente')`,
           [clientId, data.userId, `Tráfego ${i + 1}/${datasTrafico.length}`, data.traffic_cost, datasTrafico[i]]
         );
       }
@@ -149,8 +149,8 @@ export const PUT = withErrorBoundary('clients.PUT', async (request) => {
         const datasGestao = gerarDatas(newStart, data.payment_frequency || 'Mensal', data.contract_months || 1);
         for (let i = 0; i < datasGestao.length; i++) {
           await conn.query(
-            `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status, category)
-             VALUES (?, ?, ?, ?, ?, 'Pendente', 'gestao')`,
+            `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
+             VALUES (?, ?, ?, ?, ?, 'Pendente')`,
             [data.id, data.userId, `Gestão ${i + 1}/${datasGestao.length} (Renovação)`, data.monthly_fee, datasGestao[i]]
           );
         }
@@ -161,8 +161,8 @@ export const PUT = withErrorBoundary('clients.PUT', async (request) => {
         const datasTrafico = gerarDatas(newStart, data.traffic_frequency || 'Mensal', data.contract_months || 1);
         for (let i = 0; i < datasTrafico.length; i++) {
           await conn.query(
-            `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status, category)
-             VALUES (?, ?, ?, ?, ?, 'Pendente', 'trafego')`,
+            `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
+             VALUES (?, ?, ?, ?, ?, 'Pendente')`,
             [data.id, data.userId, `Tráfego ${i + 1}/${datasTrafico.length} (Renovação)`, data.traffic_cost, datasTrafico[i]]
           );
         }
