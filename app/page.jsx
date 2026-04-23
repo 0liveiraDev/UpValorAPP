@@ -518,7 +518,6 @@ export default function App() {
           payment_frequency: data.payment_frequency || 'Mensal',
           monthly_fee: parseFloat(data.monthly_fee) || 0,
           traffic_cost: parseFloat(data.traffic_cost) || 0,
-          traffic_frequency: data.traffic_frequency || 'Mensal',
           contract_start: data.contract_start || today(),
         };
         if (isEdit) await fetch('/api/clients', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
@@ -810,7 +809,7 @@ export default function App() {
                           <p className="text-slate-400 text-xs mt-0.5 truncate">{r.description}</p>
                           <div className="flex items-center gap-2 mt-2 flex-wrap">
                             <StatusBadge status={r.status} />
-                            {r.category === 'trafego' && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/20">Tráfego</span>}
+
                             <span className="text-slate-500 text-xs">{formatDate(r.due_date)}</span>
                           </div>
                         </div>
@@ -1233,19 +1232,10 @@ export default function App() {
                       </div>
                     </div>
                     <div className="border-t border-white/5 pt-3">
-                      <p className="text-slate-400 text-xs mb-2">Custo de Tráfego <span className="text-slate-500">(opcional)</span></p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-slate-400 text-xs mb-1 block">Valor Tráfego (R$)</label>
-                          <input name="traffic_cost" type="number" step="0.01" defaultValue={modal.data?.traffic_cost || ''} placeholder="0,00" className={inputClass} />
-                        </div>
-                        <div>
-                          <label className="text-slate-400 text-xs mb-1 block">Frequência Tráfego</label>
-                          <select name="traffic_frequency" defaultValue={modal.data?.traffic_frequency || 'Mensal'} className={inputClass}>
-                            <option value="Semanal">Semanal</option>
-                            <option value="Mensal">Mensal</option>
-                          </select>
-                        </div>
+                      <p className="text-slate-400 text-xs mb-2">Custo de Tráfego <span className="text-slate-500">(opcional — mesma frequência)</span></p>
+                      <div>
+                        <label className="text-slate-400 text-xs mb-1 block">Valor Tráfego (R$)</label>
+                        <input name="traffic_cost" type="number" step="0.01" defaultValue={modal.data?.traffic_cost || ''} placeholder="0,00" className={inputClass} />
                       </div>
                     </div>
                     {!modal.data && (

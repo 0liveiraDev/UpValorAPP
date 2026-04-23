@@ -81,26 +81,23 @@ export const POST = withErrorBoundary('clients.POST', async (request) => {
 
     const clientId = result.insertId;
 
-    // 2. Gerar recebíveis de gestão automaticamente
-    if (data.monthly_fee > 0 && data.contract_start) {
-      const datasGestao = gerarDatas(data.contract_start, data.payment_frequency || 'Mensal', data.contract_months || 1);
-      for (let i = 0; i < datasGestao.length; i++) {
-        await conn.query(
-          `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
-           VALUES (?, ?, ?, ?, ?, 'Pendente')`,
-          [clientId, data.userId, `Gestão ${i + 1}/${datasGestao.length}`, data.monthly_fee, datasGestao[i]]
-        );
-      }
-    }
+    // 2. Gerar cobranças UNIFICADAS (gestão + tráfego na mesma linha)
+    const gestao = parseFloat(data.monthly_fee) || 0;
+    const trafego = parseFloat(data.traffic_cost) || 0;
+    const totalCobranca = gestao + trafego;
 
-    // 3. Gerar recebíveis de tráfego automaticamente
-    if (data.traffic_cost > 0 && data.contract_start) {
-      const datasTrafico = gerarDatas(data.contract_start, data.traffic_frequency || 'Mensal', data.contract_months || 1);
-      for (let i = 0; i < datasTrafico.length; i++) {
+    if (totalCobranca > 0 && data.contract_start) {
+      const datas = gerarDatas(data.contract_start, data.payment_frequency || 'Mensal', data.contract_months || 1);
+      for (let i = 0; i < datas.length; i++) {
+        // Montar descrição detalhada
+        let desc = `Gestão: R$${gestao.toFixed(2)}`;
+        if (trafego > 0) desc += ` | Tráfego: R$${trafego.toFixed(2)}`;
+        desc += ` (${i + 1}/${datas.length})`;
+
         await conn.query(
           `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
            VALUES (?, ?, ?, ?, ?, 'Pendente')`,
-          [clientId, data.userId, `Tráfego ${i + 1}/${datasTrafico.length}`, data.traffic_cost, datasTrafico[i]]
+          [clientId, data.userId, desc, totalCobranca, datas[i]]
         );
       }
     }
@@ -144,26 +141,22 @@ export const PUT = withErrorBoundary('clients.PUT', async (request) => {
         ['Ativo', newStart, data.contract_months, data.id, data.userId]
       );
 
-      // Gerar novas cobranças de gestão
-      if (data.monthly_fee > 0) {
-        const datasGestao = gerarDatas(newStart, data.payment_frequency || 'Mensal', data.contract_months || 1);
-        for (let i = 0; i < datasGestao.length; i++) {
-          await conn.query(
-            `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
-             VALUES (?, ?, ?, ?, ?, 'Pendente')`,
-            [data.id, data.userId, `Gestão ${i + 1}/${datasGestao.length} (Renovação)`, data.monthly_fee, datasGestao[i]]
-          );
-        }
-      }
+      // Gerar cobranças unificadas (gestão + tráfego)
+      const gestao = parseFloat(data.monthly_fee) || 0;
+      const trafego = parseFloat(data.traffic_cost) || 0;
+      const totalCobranca = gestao + trafego;
 
-      // Gerar novas cobranças de tráfego
-      if (data.traffic_cost > 0) {
-        const datasTrafico = gerarDatas(newStart, data.traffic_frequency || 'Mensal', data.contract_months || 1);
-        for (let i = 0; i < datasTrafico.length; i++) {
+      if (totalCobranca > 0) {
+        const datas = gerarDatas(newStart, data.payment_frequency || 'Mensal', data.contract_months || 1);
+        for (let i = 0; i < datas.length; i++) {
+          let desc = `Gestão: R$${gestao.toFixed(2)}`;
+          if (trafego > 0) desc += ` | Tráfego: R$${trafego.toFixed(2)}`;
+          desc += ` (${i + 1}/${datas.length}) (Renovação)`;
+
           await conn.query(
             `INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status)
              VALUES (?, ?, ?, ?, ?, 'Pendente')`,
-            [data.id, data.userId, `Tráfego ${i + 1}/${datasTrafico.length} (Renovação)`, data.traffic_cost, datasTrafico[i]]
+            [data.id, data.userId, desc, totalCobranca, datas[i]]
           );
         }
       }
