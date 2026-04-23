@@ -2,9 +2,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   LayoutDashboard, Users, Briefcase, Wallet, Settings, LogOut,
-  TrendingUp, TrendingDown, AlertCircle, Plus, Edit2, Trash2, ChevronDown, ChevronUp, DollarSign
+  TrendingUp, TrendingDown, AlertCircle, Plus, Edit2, Trash2, ChevronDown, ChevronUp, DollarSign,
+  ChevronLeft, ChevronRight, CalendarDays, RefreshCw, XCircle, BarChart2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid
+} from 'recharts';
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -138,53 +142,82 @@ const StatusBadge = ({ status }) => {
   return <span className={`px-3 py-1 rounded-full text-xs font-medium border ${map[status] || map['Pendente']}`}>{status}</span>;
 };
 
-const isWithinPeriod = (dateVal, period) => {
+const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function getMonthLabel(year, month) { return `${MONTHS_PT[month]} ${year}`; }
+
+const getPeriodLabel = (periodFilter, selectedYear, selectedMonth) => {
+  if (periodFilter === 'Trimestral') {
+    const q = Math.floor(selectedMonth / 3) + 1;
+    return `${q}º Trimestre ${selectedYear}`;
+  }
+  if (periodFilter === 'Semanal') {
+    const now = new Date();
+    if (selectedYear === now.getFullYear() && selectedMonth === now.getMonth()) {
+      return "Semana Atual";
+    }
+    return `1ª Semana de ${MONTHS_PT[selectedMonth].slice(0, 3)} ${selectedYear}`;
+  }
+  return getMonthLabel(selectedYear, selectedMonth);
+};
+
+const isDateInScope = (dateVal, periodFilter, selectedYear, selectedMonth) => {
   if (!dateVal) return false;
   try {
-    let y, m, d;
-    if (typeof dateVal === 'string') {
-      const clean = dateVal.includes('T') ? dateVal.split('T')[0] : dateVal.split(' ')[0];
-      const parts = clean.split('-');
-      if (parts.length < 3) return false;
-      [y, m, d] = parts;
-    } else if (dateVal instanceof Date && !isNaN(dateVal)) {
-      y = dateVal.getFullYear();
-      m = dateVal.getMonth() + 1;
-      d = dateVal.getDate();
-    } else {
-      return false;
+    const clean = dateVal.includes('T') ? dateVal.split('T')[0] : dateVal.split(' ')[0];
+    const [y, m, d] = clean.split('-');
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), 12, 0, 0);
+    
+    if (periodFilter === 'Trimestral') {
+      const q = Math.floor(selectedMonth / 3);
+      const dQ = Math.floor(date.getMonth());
+      return date.getFullYear() === selectedYear && Math.floor(dQ / 3) === q;
     }
-
-    if (!y || !m || !d || String(y).includes('NaN')) return false;
-    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-    if (isNaN(date)) return false;
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    if (period === 'Semanal') {
-      const startOfWeek = new Date(today);
-      startOfWeek.setDate(today.getDate() - today.getDay());
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      return date >= startOfWeek && date <= endOfWeek;
+    
+    if (periodFilter === 'Semanal') {
+      const now = new Date();
+      now.setHours(12,0,0,0);
+      const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+      const baseDate = isCurrentMonth ? now : new Date(selectedYear, selectedMonth, 1, 12, 0, 0);
+      
+      const start = new Date(baseDate);
+      start.setDate(baseDate.getDate() - baseDate.getDay());
+      start.setHours(0,0,0,0);
+      
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23,59,59,999);
+      
+      return date >= start && date <= end;
     }
-    if (period === 'Mensal') {
-      return date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-    }
-    if (period === 'Trimestral') {
-      const todayYear = today.getFullYear();
-      const todayMonth = today.getMonth();
-      const dateYear = date.getFullYear();
-      const dateMonth = date.getMonth();
-      const monthsDiff = (dateYear - todayYear) * 12 + (dateMonth - todayMonth);
-      return monthsDiff >= 0 && monthsDiff <= 2;
-    }
-    return true;
+    
+    return date.getFullYear() === selectedYear && date.getMonth() === selectedMonth;
   } catch (err) {
-    return true;
+    return false;
   }
 };
+
+// Calcula faturamento/gastos por mês para gráficos
+function buildChartData(receivables, empPayments, months = 6) {
+  const now = new Date();
+  return Array.from({ length: months }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (months - 1 - i), 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const label = MONTHS_PT[m].slice(0, 3);
+    const faturamento = receivables
+      .filter(r => r.category !== 'trafego' && r.status === 'Pago')
+      .filter(r => { const rd = new Date(r.due_date || r.dueDate); return rd.getFullYear() === y && rd.getMonth() === m; })
+      .reduce((a, b) => a + parseFloat(b.amount), 0);
+    const trafego = receivables
+      .filter(r => r.category === 'trafego')
+      .filter(r => { const rd = new Date(r.due_date || r.dueDate); return rd.getFullYear() === y && rd.getMonth() === m; })
+      .reduce((a, b) => a + parseFloat(b.amount), 0);
+    const pessoal = empPayments
+      .filter(p => { const pd = new Date(p.due_date || p.dueDate); return pd.getFullYear() === y && pd.getMonth() === m; })
+      .reduce((a, b) => a + parseFloat(b.amount), 0);
+    return { label, faturamento: Math.round(faturamento), trafego: Math.round(trafego), pessoal: Math.round(pessoal) };
+  });
+}
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -208,6 +241,21 @@ export default function App() {
   const [expandedClients, setExpandedClients] = useState({});
   const [expandedEmployees, setExpandedEmployees] = useState({});
   const [periodFilter, setPeriodFilter] = useState('Mensal');
+
+  // Filtro por mês
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
+
+  const navigateMonth = (dir) => {
+    setSelectedMonth(prev => {
+      let m = prev + dir;
+      if (m < 0) { setSelectedYear(y => y - 1); return 11; }
+      if (m > 11) { setSelectedYear(y => y + 1); return 0; }
+      return m;
+    });
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -356,6 +404,36 @@ export default function App() {
     setUsers(users.filter(u => u.id !== id));
   };
 
+  // Cancelar contrato do cliente
+  const handleCancelContract = async (client) => {
+    if (!confirm(`Cancelar o contrato de "${client.name}"? Esta ação não pode ser desfeita.`)) return;
+    await fetch('/api/clients', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cancel', id: client.id, userId: currentUser.id })
+    });
+    loadData();
+  };
+
+  // Renovar contrato do cliente com os mesmos termos
+  const handleRenewContract = async (client) => {
+    await fetch('/api/clients', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'renew',
+        id: client.id,
+        userId: currentUser.id,
+        contract_months: client.contract_months || 1,
+        payment_frequency: client.payment_frequency || 'Mensal',
+        monthly_fee: parseFloat(client.monthly_fee) || 0,
+        traffic_cost: parseFloat(client.traffic_cost) || 0,
+        traffic_frequency: client.traffic_frequency || 'Mensal',
+      })
+    });
+    loadData();
+  };
+
   // Deletar transação do fluxo de caixa — e reverter status da cobrança/pagamento
   const handleDeleteTransaction = async (trans) => {
     const desc = trans.description.toLowerCase();
@@ -433,7 +511,16 @@ export default function App() {
 
     try {
       if (modal.type === 'client') {
-        const payload = { name: data.name, userId: currentUser.id };
+        const payload = {
+          name: data.name,
+          userId: currentUser.id,
+          contract_months: parseInt(data.contract_months) || 1,
+          payment_frequency: data.payment_frequency || 'Mensal',
+          monthly_fee: parseFloat(data.monthly_fee) || 0,
+          traffic_cost: parseFloat(data.traffic_cost) || 0,
+          traffic_frequency: data.traffic_frequency || 'Mensal',
+          contract_start: data.contract_start || today(),
+        };
         if (isEdit) await fetch('/api/clients', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
         else await fetch('/api/clients', { method: 'POST', headers, body: JSON.stringify(payload) });
 
@@ -461,7 +548,14 @@ export default function App() {
         }
 
       } else if (modal.type === 'employee') {
-        const payload = { name: data.name, role: data.role, userId: currentUser.id };
+        const payload = {
+          name: data.name,
+          role: data.role,
+          userId: currentUser.id,
+          contract_months: parseInt(data.contract_months) || 1,
+          salary: parseFloat(data.salary) || 0,
+          contract_start: data.contract_start || today(),
+        };
         if (isEdit) await fetch('/api/employees', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
         else await fetch('/api/employees', { method: 'POST', headers, body: JSON.stringify(payload) });
 
@@ -500,21 +594,26 @@ export default function App() {
 
   // --- KPIS ---
   const kpis = useMemo(() => {
-    const periodReceivables = receivables.filter(r => isWithinPeriod(r.due_date || r.dueDate, periodFilter));
-    const aReceber = periodReceivables.filter(r => r.status !== 'Pago').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-    const vencido = receivables.filter(r => r.status === 'Atrasado').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-    const folhaSalarial = empPayments.filter(p => p.status === 'Pendente').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-    const entradas = transactions.filter(t => t.type === 'entrada').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
-    const saidas = transactions.filter(t => t.type === 'saida').reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+    // Filtrar pelo escopo temporal escolhido (Semanal, Mensal, Trimestral)
+    const scopeRecs = receivables.filter(r => isDateInScope(r.due_date || r.dueDate, periodFilter, selectedYear, selectedMonth));
+    const aReceber = scopeRecs.filter(r => r.status !== 'Pago' && r.category !== 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
+    const aReceberTotal = scopeRecs.filter(r => r.status !== 'Pago').reduce((a, b) => a + parseFloat(b.amount), 0);
+    const vencido = receivables.filter(r => r.status === 'Atrasado').reduce((a, b) => a + parseFloat(b.amount), 0);
+    const folhaMes = empPayments.filter(p => p.status === 'Pendente' && isDateInScope(p.due_date || p.dueDate, periodFilter, selectedYear, selectedMonth)).reduce((a, b) => a + parseFloat(b.amount), 0);
+    const trafego = scopeRecs.filter(r => r.category === 'trafego' && r.status !== 'Pago').reduce((a, b) => a + parseFloat(b.amount), 0);
+    const entradas = transactions.filter(t => t.type === 'entrada').reduce((a, b) => a + parseFloat(b.amount), 0);
+    const saidas = transactions.filter(t => t.type === 'saida').reduce((a, b) => a + parseFloat(b.amount), 0);
     const saldo = entradas - saidas;
-    return { aReceber, vencido, folhaSalarial, saldo };
-  }, [receivables, empPayments, transactions, periodFilter]);
+    const contratosAtivos = clients.filter(c => c.contract_status === 'Ativo').length;
+    const contratosVencidos = clients.filter(c => c.contract_status === 'Vencido').length;
+    return { aReceber, aReceberTotal, vencido, folhaMes, trafego, saldo, contratosAtivos, contratosVencidos };
+  }, [receivables, empPayments, transactions, clients, selectedYear, selectedMonth, periodFilter]);
 
   const kpiItems = [
     { id: "saldo", title: "Saldo Atual", value: formatMoney(kpis.saldo), icon: <Wallet className="text-blue-400 w-5 h-5" /> },
-    { id: "receber", title: "A Receber", value: formatMoney(kpis.aReceber), icon: <TrendingUp className="text-emerald-400 w-5 h-5" /> },
-    { id: "vencido", title: "Cobranças Vencidas", value: formatMoney(kpis.vencido), icon: <AlertCircle className="text-rose-400 w-5 h-5" /> },
-    { id: "folha", title: "Folha Pendente", value: formatMoney(kpis.folhaSalarial), icon: <Briefcase className="text-orange-400 w-5 h-5" /> }
+    { id: "receber", title: "Gestão a Receber", value: formatMoney(kpis.aReceber), icon: <TrendingUp className="text-emerald-400 w-5 h-5" /> },
+    { id: "trafego", title: "Tráfego Pendente", value: formatMoney(kpis.trafego), icon: <BarChart2 className="text-purple-400 w-5 h-5" /> },
+    { id: "folha", title: "Folha do Mês", value: formatMoney(kpis.folhaMes), icon: <Briefcase className="text-orange-400 w-5 h-5" /> }
   ];
 
   if (!isLoaded) return null;
@@ -577,9 +676,17 @@ export default function App() {
     ...(currentUser?.role === 'admin' ? [{ name: "admin", label: "Admin", icon: Settings }] : [])
   ];
 
-  // Cobranças pendentes/atrasadas para o dashboard
-  const pendingReceivables = receivables.filter(r => r.status !== 'Pago' && isWithinPeriod(r.due_date || r.dueDate, periodFilter));
-  const pendingEmpPayments = empPayments.filter(p => p.status === 'Pendente');
+  // Cobranças pendentes para o dashboard (mês selecionado)
+  const pendingReceivables = receivables.filter(r => {
+    if (r.status === 'Pago') return false;
+    return isDateInScope(r.due_date || r.dueDate, periodFilter, selectedYear, selectedMonth);
+  });
+  const pendingEmpPayments = empPayments.filter(p => {
+    if (p.status !== 'Pendente') return false;
+    return isDateInScope(p.due_date || p.dueDate, periodFilter, selectedYear, selectedMonth);
+  });
+  const chartData = buildChartData(receivables, empPayments, 6);
+  const expiredContracts = clients.filter(c => c.contract_status === 'Vencido');
 
   return (
     <div className="min-h-screen bg-[#0f1117] text-slate-200 font-sans relative pb-32">
@@ -629,29 +736,71 @@ export default function App() {
         {/* ===== PAINEL ===== */}
         {activeTab === 'painel' && isClient && (
           <>
-            <HoverEffect items={kpiItems} className="-mx-2" />
-
-            {/* A Receber dos Clientes */}
-            <div className="space-y-3">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                  <TrendingUp className="text-emerald-400 w-5 h-5" /> A Receber dos Clientes
-                </h2>
-                <div className="flex justify-center w-full md:w-auto bg-[#151821] border border-white/5 rounded-lg p-1">
+            <div className="space-y-4">
+              {/* Top Bar: Filtro de Período e Navegação */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                {/* Filtro de Período (Semanal/Mensal/Trimestral) */}
+                <div className="flex bg-[#151821] p-1 rounded-xl border border-white/5 w-full md:w-auto">
                   {['Semanal', 'Mensal', 'Trimestral'].map(p => (
                     <button
                       key={p}
                       onClick={() => setPeriodFilter(p)}
-                      className={cn("px-3 py-1.5 text-xs font-medium rounded-md transition-colors", periodFilter === p ? "bg-emerald-500/20 text-emerald-400" : "text-slate-400 hover:text-white")}
+                      className={cn(
+                        "flex-1 md:flex-none px-4 py-1.5 rounded-lg text-sm font-medium transition-all text-center",
+                        periodFilter === p ? "bg-blue-600/20 text-blue-400" : "text-slate-400 hover:text-white"
+                      )}
                     >
                       {p}
                     </button>
                   ))}
                 </div>
+
+                {/* Navegador de Mês */}
+                <div className="flex items-center justify-between bg-[#151821] border border-white/5 rounded-xl px-2 py-1 flex-1 max-w-sm">
+                  <button onClick={() => navigateMonth(-1)} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <div className="flex items-center gap-2 px-2">
+                    <CalendarDays className="w-4 h-4 text-blue-400" />
+                    <span className="text-white font-semibold text-sm whitespace-nowrap">{getPeriodLabel(periodFilter, selectedYear, selectedMonth)}</span>
+                    {!isCurrentMonth && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium whitespace-nowrap">Previsão</span>
+                    )}
+                  </div>
+                  <button onClick={() => navigateMonth(1)} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
+
+            {/* KPIs */}
+            <HoverEffect items={kpiItems} className="-mx-2" />
+
+            {/* KPIs Extras de Contratos */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-[#151821] border border-white/5 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-xs mb-1">Contratos Ativos</p>
+                <p className="text-2xl font-bold text-emerald-400">{kpis.contratosAtivos}</p>
+              </div>
+              <div className="bg-[#151821] border border-white/5 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-xs mb-1">Vencidos</p>
+                <p className="text-2xl font-bold text-rose-400">{kpis.contratosVencidos}</p>
+              </div>
+              <div className="bg-[#151821] border border-white/5 rounded-xl p-4 text-center">
+                <p className="text-slate-400 text-xs mb-1">Total Clientes</p>
+                <p className="text-2xl font-bold text-white">{clients.length}</p>
+              </div>
+            </div>
+
+            {/* A Receber dos Clientes (mês selecionado) */}
+            <div className="space-y-3">
+              <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+                <TrendingUp className="text-emerald-400 w-5 h-5" />
+                {isCurrentMonth ? 'A Receber — ' : 'Previsão — '}{getPeriodLabel(periodFilter, selectedYear, selectedMonth)}
+              </h2>
               <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
                 {pendingReceivables.length === 0 ? (
-                  <p className="p-6 text-center text-slate-500 italic text-sm">Nenhuma cobrança pendente.</p>
+                  <p className="p-6 text-center text-slate-500 italic text-sm">Nenhuma cobrança neste mês.</p>
                 ) : (
                   <div className="divide-y divide-white/5 max-h-72 overflow-y-auto">
                     {pendingReceivables.map(r => (
@@ -659,14 +808,15 @@ export default function App() {
                         <div className="min-w-0">
                           <p className="text-white font-semibold truncate">{r.client_name}</p>
                           <p className="text-slate-400 text-xs mt-0.5 truncate">{r.description}</p>
-                          <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-2 mt-2 flex-wrap">
                             <StatusBadge status={r.status} />
+                            {r.category === 'trafego' && <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 border border-purple-500/20">Tráfego</span>}
                             <span className="text-slate-500 text-xs">{formatDate(r.due_date)}</span>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
                           <span className="text-emerald-400 font-mono font-bold text-sm">{formatMoney(r.amount)}</span>
-                          <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors whitespace-nowrap">Receber</button>
+                          {isCurrentMonth && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-3 py-1.5 rounded-lg hover:bg-blue-500/10 transition-colors whitespace-nowrap">Receber</button>}
                         </div>
                       </div>
                     ))}
@@ -682,7 +832,7 @@ export default function App() {
               </h2>
               <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
                 {pendingEmpPayments.length === 0 ? (
-                  <p className="p-6 text-center text-slate-500 italic text-sm">Nenhum pagamento pendente.</p>
+                  <p className="p-6 text-center text-slate-500 italic text-sm">Nenhum pagamento neste mês.</p>
                 ) : (
                   <div className="divide-y divide-white/5 max-h-72 overflow-y-auto">
                     {pendingEmpPayments.map(p => (
@@ -692,11 +842,12 @@ export default function App() {
                           <p className="text-slate-400 text-xs mt-0.5 truncate">{p.employee_role} · {p.description}</p>
                           <div className="flex items-center gap-2 mt-2">
                             <StatusBadge status={p.status} />
+                            <span className="text-slate-500 text-xs">{formatDate(p.due_date)}</span>
                           </div>
                         </div>
                         <div className="flex flex-col items-end gap-2 shrink-0">
                           <span className="text-rose-400 font-mono font-bold text-sm">{formatMoney(p.amount)}</span>
-                          <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors whitespace-nowrap">Pagar</button>
+                          {isCurrentMonth && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors whitespace-nowrap">Pagar</button>}
                         </div>
                       </div>
                     ))}
@@ -705,7 +856,55 @@ export default function App() {
               </div>
             </div>
 
-            {/* Últimas transações */}
+            {/* Gráficos — Últimos 6 meses */}
+            <div className="space-y-4">
+              <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+                <BarChart2 className="text-blue-400 w-5 h-5" /> Evolução Financeira (6 meses)
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* Faturamento Gestão */}
+                <div className="bg-[#151821] border border-white/5 rounded-2xl p-4">
+                  <p className="text-emerald-400 text-xs font-semibold uppercase tracking-wide mb-3">Faturamento Gestão</p>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                      <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                      <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #ffffff10', borderRadius: 8, color: '#fff', fontSize: 12 }} formatter={v => formatMoney(v)} />
+                      <Bar dataKey="faturamento" fill="#10b981" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Gasto Tráfego */}
+                <div className="bg-[#151821] border border-white/5 rounded-2xl p-4">
+                  <p className="text-purple-400 text-xs font-semibold uppercase tracking-wide mb-3">Custo Tráfego</p>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                      <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                      <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #ffffff10', borderRadius: 8, color: '#fff', fontSize: 12 }} formatter={v => formatMoney(v)} />
+                      <Bar dataKey="trafego" fill="#a855f7" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                {/* Gasto Pessoal */}
+                <div className="bg-[#151821] border border-white/5 rounded-2xl p-4">
+                  <p className="text-orange-400 text-xs font-semibold uppercase tracking-wide mb-3">Gasto com Pessoal</p>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff08" />
+                      <XAxis dataKey="label" tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
+                      <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #ffffff10', borderRadius: 8, color: '#fff', fontSize: 12 }} formatter={v => formatMoney(v)} />
+                      <Bar dataKey="pessoal" fill="#f97316" radius={[4,4,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Últimas Transações */}
             <div className="space-y-3">
               <h2 className="text-lg md:text-xl font-bold text-white">Últimas Transações</h2>
               <div className="bg-white/5 border border-white/5 rounded-2xl overflow-hidden">
@@ -729,42 +928,96 @@ export default function App() {
                 )}
               </div>
             </div>
+          </div>
           </>
         )}
 
+
         {/* ===== CLIENTES ===== */}
         {activeTab === 'clientes' && (
-          <div className="space-y-3">
-            {clients.length === 0 && (
-              <div className="bg-white/5 rounded-2xl p-10 text-center text-slate-500 italic border border-white/5">
-                Nenhum cliente cadastrado. Clique em "Novo Cliente" para começar.
+          <div className="space-y-4">
+            {/* Seção: Contratos Vencidos */}
+            {expiredContracts.length > 0 && (
+              <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 space-y-3">
+                <h3 className="text-rose-400 font-semibold text-sm flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" /> Contratos Vencidos ({expiredContracts.length})
+                </h3>
+                {expiredContracts.map(c => (
+                  <div key={c.id} className="flex items-center justify-between bg-[#0f1117]/60 rounded-xl p-3">
+                    <div>
+                      <p className="text-white font-medium text-sm">{c.name}</p>
+                      <p className="text-slate-500 text-xs mt-0.5">{c.contract_months} mês(es) · {c.payment_frequency} · {formatMoney(c.monthly_fee)}/recorrência</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleRenewContract(c)}
+                        className="flex items-center gap-1 text-xs text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                      >
+                        <RefreshCw className="w-3 h-3" /> Renovar
+                      </button>
+                      <button
+                        onClick={() => handleCancelContract(c)}
+                        className="flex items-center gap-1 text-xs text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+                      >
+                        <XCircle className="w-3 h-3" /> Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-            {clients.map(client => {
+
+            {clients.filter(c => c.contract_status !== 'Cancelado').length === 0 && (
+              <div className="bg-white/5 rounded-2xl p-10 text-center text-slate-500 italic border border-white/5">
+                Nenhum cliente ativo. Clique em "Novo Cliente" para começar.
+              </div>
+            )}
+            {clients.filter(c => c.contract_status !== 'Cancelado').map(client => {
               const clientRecs = receivables.filter(r => r.client_id === client.id);
               const isExpanded = expandedClients[client.id];
-              const pendingSum = clientRecs.filter(r => r.status !== 'Pago').reduce((a, b) => a + parseFloat(b.amount), 0);
+              const pendingSum = clientRecs.filter(r => r.status !== 'Pago' && r.category !== 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
+              const trafegoSum = clientRecs.filter(r => r.status !== 'Pago' && r.category === 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
+              const statusColor = client.contract_status === 'Ativo' ? 'text-emerald-400' : client.contract_status === 'Vencido' ? 'text-rose-400' : 'text-slate-500';
               return (
                 <div key={client.id} className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
                   <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <button onClick={() => setExpandedClients(prev => ({ ...prev, [client.id]: !prev[client.id] }))} className="text-slate-400 hover:text-white transition-colors">
                         {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                       </button>
                       <div>
-                        <p className="text-white font-semibold">{client.name}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{clientRecs.length} cobrança(s) · A receber: <span className="text-emerald-400">{formatMoney(pendingSum)}</span></p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-semibold">{client.name}</p>
+                          <span className={`text-[10px] font-bold uppercase ${statusColor}`}>{client.contract_status || 'Ativo'}</span>
+                        </div>
+                        <p className="text-slate-500 text-xs mt-0.5">
+                          {client.payment_frequency || 'Mensal'} · {client.contract_months || 1} mês(es) ·
+                          Gestão: <span className="text-emerald-400">{formatMoney(pendingSum)}</span>
+                          {trafegoSum > 0 && <> · Tráfego: <span className="text-purple-400">{formatMoney(trafegoSum)}</span></>}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setModal({ isOpen: true, type: 'receivable', data: null, parentId: client.id, parentName: client.name })}
-                        className="flex items-center gap-1.5 text-xs text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                        className="flex items-center gap-1 text-xs text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
                       >
-                        <Plus className="w-3.5 h-3.5" /> Nova Cobrança
+                        <Plus className="w-3.5 h-3.5" /> Cobrança
                       </button>
-                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDeleteClient(client.id, client.name)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      {client.contract_status === 'Vencido' && (
+                        <button onClick={() => handleRenewContract(client)} className="text-slate-400 hover:text-emerald-400 p-1.5 rounded transition-colors" title="Renovar contrato">
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors">
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleCancelContract(client)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors" title="Cancelar contrato">
+                        <XCircle className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleDeleteClient(client.id, client.name)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                   {isExpanded && (
@@ -776,7 +1029,10 @@ export default function App() {
                           <div key={r.id} className="bg-[#0f1117]/60 rounded-lg p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="text-slate-300 text-sm font-medium truncate">{r.description}</p>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <p className="text-slate-300 text-sm font-medium truncate">{r.description}</p>
+                                  {r.category === 'trafego' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400">Tráfego</span>}
+                                </div>
                                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                   <StatusBadge status={r.status} />
                                   <span className="text-slate-500 text-xs">{formatDate(r.due_date)}</span>
@@ -801,6 +1057,7 @@ export default function App() {
             })}
           </div>
         )}
+
 
         {/* ===== FUNCIONÁRIOS ===== */}
         {activeTab === 'funcionarios' && (
@@ -949,7 +1206,54 @@ export default function App() {
               <form onSubmit={handleSave} className="space-y-4 mt-4">
                 {/* Cliente */}
                 {modal.type === 'client' && (
-                  <input name="name" defaultValue={modal.data?.name} placeholder="Nome do Cliente" className={inputClass} required />
+                  <>
+                    <input name="name" defaultValue={modal.data?.name} placeholder="Nome da Empresa / Cliente" className={inputClass} required />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-400 text-xs mb-1 block">Meses de Contrato</label>
+                        <input name="contract_months" type="number" min="1" defaultValue={modal.data?.contract_months || 1} className={inputClass} required />
+                      </div>
+                      <div>
+                        <label className="text-slate-400 text-xs mb-1 block">Frequência de Pagamento</label>
+                        <select name="payment_frequency" defaultValue={modal.data?.payment_frequency || 'Mensal'} className={inputClass}>
+                          <option value="Semanal">Semanal</option>
+                          <option value="Quinzenal">Quinzenal</option>
+                          <option value="Mensal">Mensal</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-400 text-xs mb-1 block">Valor da Gestão (R$)</label>
+                        <input name="monthly_fee" type="number" step="0.01" defaultValue={modal.data?.monthly_fee || ''} placeholder="0,00" className={inputClass} required />
+                      </div>
+                      <div>
+                        <label className="text-slate-400 text-xs mb-1 block">Data 1º Pagamento</label>
+                        <input name="contract_start" type="date" defaultValue={modal.data?.contract_start?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} required />
+                      </div>
+                    </div>
+                    <div className="border-t border-white/5 pt-3">
+                      <p className="text-slate-400 text-xs mb-2">Custo de Tráfego <span className="text-slate-500">(opcional)</span></p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-slate-400 text-xs mb-1 block">Valor Tráfego (R$)</label>
+                          <input name="traffic_cost" type="number" step="0.01" defaultValue={modal.data?.traffic_cost || ''} placeholder="0,00" className={inputClass} />
+                        </div>
+                        <div>
+                          <label className="text-slate-400 text-xs mb-1 block">Frequência Tráfego</label>
+                          <select name="traffic_frequency" defaultValue={modal.data?.traffic_frequency || 'Mensal'} className={inputClass}>
+                            <option value="Semanal">Semanal</option>
+                            <option value="Mensal">Mensal</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    {!modal.data && (
+                      <p className="text-blue-400/70 text-xs bg-blue-500/5 border border-blue-500/10 rounded-lg px-3 py-2">
+                        ℹ️ Todas as cobranças e custos de tráfego serão gerados automaticamente.
+                      </p>
+                    )}
+                  </>
                 )}
 
                 {/* Cobrança do cliente */}
@@ -971,6 +1275,25 @@ export default function App() {
                   <>
                     <input name="name" defaultValue={modal.data?.name} placeholder="Nome do Funcionário" className={inputClass} required />
                     <input name="role" defaultValue={modal.data?.role} placeholder="Cargo" className={inputClass} required />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-slate-400 text-xs mb-1 block">Meses de Contrato</label>
+                        <input name="contract_months" type="number" min="1" defaultValue={modal.data?.contract_months || 1} className={inputClass} required />
+                      </div>
+                      <div>
+                        <label className="text-slate-400 text-xs mb-1 block">Salário Mensal (R$)</label>
+                        <input name="salary" type="number" step="0.01" defaultValue={modal.data?.salary || ''} placeholder="0,00" className={inputClass} required />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-slate-400 text-xs mb-1 block">Data 1º Pagamento</label>
+                      <input name="contract_start" type="date" defaultValue={modal.data?.contract_start?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} required />
+                    </div>
+                    {!modal.data && (
+                      <p className="text-orange-400/70 text-xs bg-orange-500/5 border border-orange-500/10 rounded-lg px-3 py-2">
+                        ℹ️ Todos os pagamentos mensais serão gerados automaticamente.
+                      </p>
+                    )}
                   </>
                 )}
 
