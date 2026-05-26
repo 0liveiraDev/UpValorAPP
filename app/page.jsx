@@ -693,7 +693,7 @@ export default function App() {
         <div className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-40 h-auto mb-2">
-              <img src="/logo.png" alt="UpValor" className="w-full h-auto object-contain drop-shadow-xl" />
+              <img src="/logo.png" alt="UpValor" className="w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
             </div>
           </div>
           {loginError && <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">{loginError}</div>}
@@ -743,7 +743,7 @@ export default function App() {
     <div className="min-h-screen bg-[#0f1117] text-slate-200 font-sans relative pb-32">
       <div className="fixed top-4 right-4 z-50 flex items-center bg-[#151821]/80 backdrop-blur-md p-1.5 rounded-full border border-white/5 shadow-xl">
         <span className="text-sm font-medium text-white mr-3 ml-4">{currentUser?.name || "Usuário"}</span>
-        <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-rose-400 rounded-full bg-white/5 mr-1"><LogOut className="w-4 h-4" /></button>
+        <button onClick={handleLogout} aria-label="Sair do sistema" className="p-2 text-slate-400 hover:text-rose-400 rounded-full bg-white/5 mr-1"><LogOut className="w-4 h-4" /></button>
       </div>
 
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 md:top-6 md:bottom-auto z-50">
@@ -808,7 +808,7 @@ export default function App() {
 
                 {/* Navegador de Mês */}
                 <div className="flex items-center justify-between bg-[#151821] border border-white/5 rounded-xl px-2 py-1 flex-1 max-w-sm">
-                  <button onClick={() => navigateMonth(-1)} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={() => navigateMonth(-1)} aria-label="Mês anterior" className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <div className="flex items-center gap-2 px-2">
@@ -818,7 +818,7 @@ export default function App() {
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-medium whitespace-nowrap">Previsão</span>
                     )}
                   </div>
-                  <button onClick={() => navigateMonth(1)} className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={() => navigateMonth(1)} aria-label="Próximo mês" className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
@@ -1033,7 +1033,7 @@ export default function App() {
                 <div key={client.id} className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
-                      <button onClick={() => setExpandedClients(prev => ({ ...prev, [client.id]: !prev[client.id] }))} className="text-slate-400 hover:text-white transition-colors">
+                      <button onClick={() => setExpandedClients(prev => ({ ...prev, [client.id]: !prev[client.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-slate-400 hover:text-white transition-colors">
                         {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                       </button>
                       <div>
@@ -1056,17 +1056,17 @@ export default function App() {
                         <Plus className="w-3.5 h-3.5" /> Cobrança
                       </button>
                       {client.contract_status === 'Vencido' && (
-                        <button onClick={() => handleRenewContract(client)} className="text-slate-400 hover:text-emerald-400 p-1.5 rounded transition-colors" title="Renovar contrato">
+                        <button onClick={() => handleRenewContract(client)} aria-label="Renovar contrato" className="text-slate-400 hover:text-emerald-400 p-1.5 rounded transition-colors" title="Renovar contrato">
                           <RefreshCw className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors">
+                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} aria-label="Editar cliente" className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleCancelContract(client)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors" title="Cancelar contrato">
+                      <button onClick={() => handleCancelContract(client)} aria-label="Cancelar contrato" className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors" title="Cancelar contrato">
                         <XCircle className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDeleteClient(client.id, client.name)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors">
+                      <button onClick={() => handleDeleteClient(client.id, client.name)} aria-label="Excluir cliente" className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -1093,8 +1093,8 @@ export default function App() {
                                 <span className="font-mono text-sm font-semibold" style={{ color: r.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(r.amount)}</span>
                                 <div className="flex items-center gap-1">
                                   {r.status !== 'Pago' && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-2 py-1 rounded hover:bg-blue-500/10">Receber</button>}
-                                  <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteReceivable(r)} className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} aria-label="Editar cobrança" className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteReceivable(r)} aria-label="Excluir cobrança" className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             </div>
@@ -1126,7 +1126,7 @@ export default function App() {
                 <div key={emp.id} className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-4">
-                      <button onClick={() => setExpandedEmployees(prev => ({ ...prev, [emp.id]: !prev[emp.id] }))} className="text-slate-400 hover:text-white transition-colors">
+                      <button onClick={() => setExpandedEmployees(prev => ({ ...prev, [emp.id]: !prev[emp.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-slate-400 hover:text-white transition-colors">
                         {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                       </button>
                       <div>
@@ -1141,8 +1141,8 @@ export default function App() {
                       >
                         <Plus className="w-3.5 h-3.5" /> Novo Pagamento
                       </button>
-                      <button onClick={() => setModal({ isOpen: true, type: 'employee', data: emp, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDeleteEmployee(emp.id, emp.name)} className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'employee', data: emp, parentId: null, parentName: '' })} aria-label="Editar funcionário" className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteEmployee(emp.id, emp.name)} aria-label="Excluir funcionário" className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                   {isExpanded && (
@@ -1164,8 +1164,8 @@ export default function App() {
                                 <span className="font-mono text-sm font-semibold" style={{ color: p.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(p.amount)}</span>
                                 <div className="flex items-center gap-1">
                                   {p.status !== 'Pago' && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-2 py-1 rounded hover:bg-orange-500/10">Pagar</button>}
-                                  <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteEmpPayment(p)} className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} aria-label="Editar pagamento" className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteEmpPayment(p)} aria-label="Excluir pagamento" className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             </div>
@@ -1199,8 +1199,8 @@ export default function App() {
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
                     <div className="flex gap-1">
-                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDeleteTransaction(t)} className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} aria-label="Editar transação" className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteTransaction(t)} aria-label="Excluir transação" className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </div>
@@ -1222,7 +1222,7 @@ export default function App() {
                     <td className="p-4 capitalize">{u.role}</td>
                     <td className="p-4 text-right">
                       {u.id !== currentUser?.id && (
-                        <button onClick={() => handleDeleteUser(u.id)} className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
+                        <button onClick={() => handleDeleteUser(u.id)} aria-label="Excluir usuário" className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
                       )}
                     </td>
                   </tr>
