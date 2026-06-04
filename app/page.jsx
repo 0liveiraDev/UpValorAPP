@@ -861,7 +861,7 @@ export default function App() {
               </div>
               <div className="bg-[#151821] border border-white/5 rounded-xl p-4 text-center">
                 <p className="text-slate-400 text-xs mb-1">Total Clientes</p>
-                <p className="text-2xl font-bold text-white">{clients.length}</p>
+                <p className="text-2xl font-bold text-white">{clients.filter(c => c.contract_status !== 'Cancelado').length}</p>
               </div>
             </div>
 
