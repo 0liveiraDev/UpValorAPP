@@ -3,14 +3,39 @@
     "appName": "UpValor",
     "webDir": "out",
     "server": {
-        "url": "https://www.dashboard.upvaloragencia.com.br",
-        "cleartext": false
+        "url": "http://127.0.0.1:3000",
+        "cleartext": true,
+        "androidScheme": "http"
+    },
+    "android": {
+        "minWebViewVersion": 60,
+        "backgroundColor": "#0d0f14",
+        "allowMixedContent": false
     },
     "plugins": {
         "SplashScreen": {
-            "launchShowDuration": 2000,
+            "launchShowDuration": 2500,
+            "launchAutoHide": true,
             "backgroundColor": "#0d0f14",
-            "showSpinner": false
+            "androidSplashResourceName": "splash",
+            "androidScaleType": "CENTER_CROP",
+            "showSpinner": false,
+            "iosSpinnerStyle": "small",
+            "spinnerColor": "#7c3aed"
+        },
+        "StatusBar": {
+            "style": "dark",
+            "backgroundColor": "#0d0f14"
+        },
+        "NativeBiometric": {
+            "biometricTitle": "UpValor",
+            "biometricSubtitle": "Confirme sua identidade",
+            "biometricDescription": "Use sua digital ou reconhecimento facial para acessar"
+        },
+        "LocalNotifications": {
+            "smallIcon": "ic_stat_icon_config_sample",
+            "iconColor": "#7c3aed",
+            "sound": "beep.wav"
         }
     }
 }

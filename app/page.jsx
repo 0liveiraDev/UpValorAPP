@@ -288,14 +288,41 @@ export default function App() {
     setIsClient(true);
   }, []);
 
-  // --- PERSISTÊNCIA DE LOGIN ---
+  // --- PERSISTÊNCIA DE LOGIN COM BIOMETRIA ---
   useEffect(() => {
-    const savedUser = localStorage.getItem('upvalor_user');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-      setIsAuthenticated(true);
-    }
-    setIsLoaded(true);
+    const doAutoLogin = async () => {
+      const savedUser = localStorage.getItem('upvalor_user');
+      if (savedUser) {
+        let authSuccess = true;
+
+        // Tentar biometria se estiver no app nativo
+        if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.()) {
+          try {
+            const { checkBiometricAvailability, authenticateWithBiometric } = await import('../lib/native/biometric.js');
+            const avail = await checkBiometricAvailability();
+            
+            if (avail.isAvailable) {
+              const result = await authenticateWithBiometric('Confirme sua identidade para acessar o painel');
+              authSuccess = result;
+            }
+          } catch (err) {
+            console.warn('[Biometric] Erro ao tentar autenticação biométrica:', err);
+          }
+        }
+
+        if (authSuccess) {
+          setCurrentUser(JSON.parse(savedUser));
+          setIsAuthenticated(true);
+        } else {
+          // Falhou biometria (cancelado ou erro), força login manual
+          localStorage.removeItem('upvalor_user');
+          setIsAuthenticated(false);
+        }
+      }
+      setIsLoaded(true);
+    };
+
+    doAutoLogin();
   }, []);
 
   useEffect(() => {
@@ -382,14 +409,9 @@ export default function App() {
     }
   };
 
-  // Deletar cliente: apaga o cliente (cascata apaga receivables no DB), e as transações vinculadas
+  // Deletar cliente: o backend faz cascata completa (receivables + transações vinculadas + cliente)
   const handleDeleteClient = async (clientId, clientName) => {
-    const clientReceivables = receivables.filter(r => r.client_id === clientId);
-    for (const r of clientReceivables) {
-      if (r.status === 'Pago') {
-        await deleteLinkedTransaction(`Recebimento - ${clientName}`);
-      }
-    }
+    if (!confirm(`Excluir "${clientName}" e todas as cobranças vinculadas? Esta ação não pode ser desfeita.`)) return;
     await fetch(`/api/clients?id=${clientId}&userId=${currentUser.id}`, { method: 'DELETE' });
     loadData();
   };

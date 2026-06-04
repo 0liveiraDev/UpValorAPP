@@ -191,8 +191,36 @@ export const PUT = withErrorBoundary('clients.PUT', async (request) => {
 export const DELETE = withErrorBoundary('clients.DELETE', async (request) => {
   const { searchParams } = new URL(request.url);
   const id = searchParams.get('id');
-  await pool.query('DELETE FROM clients WHERE id = ?', [id]);
-  cacheInvalidate('clients:');
-  cacheInvalidate('receivables:');
+  const userId = searchParams.get('userId');
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // 1. Buscar nome do cliente para limpar transações vinculadas
+    const [clientRows] = await conn.query('SELECT name FROM clients WHERE id = ? AND user_id = ?', [id, userId]);
+    const clientName = clientRows?.[0]?.name;
+
+    // 2. Deletar todas as cobranças (receivables) do cliente
+    await conn.query('DELETE FROM client_receivables WHERE client_id = ? AND user_id = ?', [id, userId]);
+
+    // 3. Deletar transações vinculadas no fluxo de caixa (entradas geradas por pagamentos deste cliente)
+    if (clientName) {
+      await conn.query('DELETE FROM transactions WHERE user_id = ? AND description = ?', [userId, `Recebimento - ${clientName}`]);
+    }
+
+    // 4. Deletar o cliente
+    await conn.query('DELETE FROM clients WHERE id = ? AND user_id = ?', [id, userId]);
+
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+
+  cacheInvalidate(`clients:${userId}`);
+  cacheInvalidate(`receivables:${userId}`);
   return NextResponse.json({ success: true });
 });

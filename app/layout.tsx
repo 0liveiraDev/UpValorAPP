@@ -87,6 +87,27 @@ export default function RootLayout({
             }
           `}
         </Script>
+        <Script id="capacitor-native-init" strategy="afterInteractive">
+          {`
+            // Inicializar serviços nativos Capacitor (StatusBar, SplashScreen)
+            window.addEventListener('load', async function() {
+              if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+                console.log('[UpValor] App nativo detectado:', window.Capacitor.getPlatform());
+                try {
+                  const { StatusBar } = await import('@capacitor/status-bar');
+                  await StatusBar.setStyle({ style: 'DARK' });
+                  await StatusBar.setBackgroundColor({ color: '#0d0f14' });
+                } catch(e) {}
+                try {
+                  const { SplashScreen } = await import('@capacitor/splash-screen');
+                  setTimeout(function() {
+                    SplashScreen.hide({ fadeOutDuration: 500 });
+                  }, 800);
+                } catch(e) {}
+              }
+            });
+          `}
+        </Script>
       </body>
     </html>
   );

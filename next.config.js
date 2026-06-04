@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    serverExternalPackages: ['mysql2'],
+    output: 'export', serverExternalPackages: ['mysql2'],
 
     // Remover header X-Powered-By para segurança
     poweredByHeader: false,
