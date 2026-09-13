@@ -120,11 +120,44 @@ export const PUT = withErrorBoundary('clients.PUT', async (request) => {
 
   // Cancelar contrato
   if (data.action === 'cancel') {
-    await pool.query(
-      'UPDATE clients SET contract_status = ? WHERE id = ? AND user_id = ?',
-      ['Cancelado', data.id, data.userId]
-    );
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+
+      // 1. Buscar nome do cliente
+      const [clientRows] = await conn.query('SELECT name FROM clients WHERE id = ? AND user_id = ?', [data.id, data.userId]);
+      const clientName = clientRows?.[0]?.name;
+
+      // 2. Mudar status para Cancelado
+      await conn.query(
+        'UPDATE clients SET contract_status = ? WHERE id = ? AND user_id = ?',
+        ['Cancelado', data.id, data.userId]
+      );
+
+      // 3. Deletar cobranças PENDENTES (manter as já pagas como histórico)
+      await conn.query(
+        "DELETE FROM client_receivables WHERE client_id = ? AND user_id = ? AND status != 'Pago'",
+        [data.id, data.userId]
+      );
+
+      // 4. Deletar transações vinculadas a recebimentos deste cliente
+      if (clientName) {
+        await conn.query(
+          'DELETE FROM transactions WHERE user_id = ? AND description LIKE ?',
+          [data.userId, `Recebimento - ${clientName}%`]
+        );
+      }
+
+      await conn.commit();
+    } catch (err) {
+      await conn.rollback();
+      throw err;
+    } finally {
+      conn.release();
+    }
+
     cacheInvalidate(`clients:${data.userId}`);
+    cacheInvalidate(`receivables:${data.userId}`);
     return NextResponse.json({ success: true });
   }
 

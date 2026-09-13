@@ -642,8 +642,14 @@ export default function App() {
 
   // --- KPIS ---
   const kpis = useMemo(() => {
-    // Filtrar pelo escopo temporal escolhido (Semanal, Mensal, Trimestral)
-    const scopeRecs = receivables.filter(r => isDateInScope(r.due_date || r.dueDate, periodFilter, selectedYear, selectedMonth));
+    // IDs de clientes cancelados — seus receivables não devem contar nos KPIs
+    const cancelledClientIds = new Set(clients.filter(c => c.contract_status === 'Cancelado').map(c => c.id));
+    
+    // Filtrar pelo escopo temporal E excluir clientes cancelados
+    const scopeRecs = receivables.filter(r => {
+      if (cancelledClientIds.has(r.client_id)) return false;
+      return isDateInScope(r.due_date || r.dueDate, periodFilter, selectedYear, selectedMonth);
+    });
     
     // Discriminar gestão vs tráfego via parsing da descrição
     let gestaoAReceber = 0, trafegoAReceber = 0;
@@ -750,8 +756,10 @@ export default function App() {
   ];
 
   // Cobranças pendentes para o dashboard (mês selecionado)
+  const cancelledIds = new Set(clients.filter(c => c.contract_status === 'Cancelado').map(c => c.id));
   const pendingReceivables = receivables.filter(r => {
     if (r.status === 'Pago') return false;
+    if (cancelledIds.has(r.client_id)) return false;
     return isDateInScope(r.due_date || r.dueDate, periodFilter, selectedYear, selectedMonth);
   });
   const pendingEmpPayments = empPayments.filter(p => {
