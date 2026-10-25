@@ -137,6 +137,8 @@ export default function App() {
   const handleShift = (d) => setPeriod((p) => shiftPeriod(p, d, new Date()));
 
   useEffect(() => {
+    // Preserva a primeira renderização idêntica no servidor e no cliente antes de habilitar a UI.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
   }, []);
 
@@ -222,6 +224,8 @@ export default function App() {
   }, [currentUser]);
 
   useEffect(() => {
+    // Sincroniza os dados remotos após o login; mantém o tratamento de falhas das requisições.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isAuthenticated) loadData();
   }, [isAuthenticated, loadData]);
 
