@@ -30,7 +30,7 @@ export async function register() {
     });
 
     // Handler para Promises rejeitadas sem .catch()
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason) => {
       const timestamp = new Date().toISOString();
       console.error(`\n🟠 [${timestamp}] [CRASH PROTECTION] unhandledRejection capturado:`);
       console.error('  Razão:', reason);

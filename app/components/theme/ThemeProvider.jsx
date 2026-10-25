@@ -41,7 +41,7 @@ export function ThemeProvider({ children }) {
         try {
           localStorage.setItem(THEME_KEY, next);
         } catch {
-          // localStorage pode falhar em ambientes com cookies/storage bloqueados
+          // localStorage pode falhar em ambientes restritos
         }
         flushSync(() => {
           setTheme(next);
@@ -52,11 +52,7 @@ export function ThemeProvider({ children }) {
         typeof document !== 'undefined' &&
         typeof document.startViewTransition === 'function';
 
-      const prefersReducedMotion =
-        typeof window !== 'undefined' &&
-        window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-
-      if (!hasStartViewTransition || prefersReducedMotion || !originEl) {
+      if (!hasStartViewTransition || !originEl) {
         apply();
         return;
       }
@@ -112,9 +108,7 @@ export function ThemeProvider({ children }) {
   );
 
   return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
 

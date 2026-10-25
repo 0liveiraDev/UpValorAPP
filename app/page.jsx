@@ -1,14 +1,11 @@
 'use client';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import Image from 'next/image';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  LayoutDashboard, Users, Briefcase, Wallet, Settings,
-  AlertCircle, Plus, Edit2, Trash2, ChevronDown, ChevronUp,
-  RefreshCw, XCircle
+  LayoutDashboard, Users, Briefcase, Wallet, Settings
 } from 'lucide-react';
-import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  formatMoney,
-  formatDate,
   parseDescValues,
   parseInstallment,
 } from '../lib/dashboard/format.js';
@@ -21,11 +18,44 @@ import {
   isCurrentPeriod,
 } from '../lib/dashboard/period.js';
 import { buildChartData } from '../lib/dashboard/chartData.js';
-import StatusBadge from './components/ui/StatusBadge.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import DashboardPanel from './components/dashboard/DashboardPanel.jsx';
+import ClientesSection from './components/sections/ClientesSection.jsx';
+import FuncionariosSection from './components/sections/FuncionariosSection.jsx';
+import FluxoSection from './components/sections/FluxoSection.jsx';
+import AdminSection from './components/sections/AdminSection.jsx';
 
 const today = () => new Date().toISOString().split('T')[0];
+
+class LiquidBlob {
+  constructor(canvas, colors) {
+    this.radius = Math.random() * 150 + 100;
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.vx = (Math.random() - 0.5) * 2;
+    this.vy = (Math.random() - 0.5) * 2;
+    this.color = colors[Math.floor(Math.random() * colors.length)];
+  }
+  update(canvas, mouse) {
+    this.x += this.vx;
+    this.y += this.vy;
+    if (mouse.x !== undefined) {
+      const dx = mouse.x - this.x, dy = mouse.y - this.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 400) { this.x += dx * 0.01; this.y += dy * 0.01; }
+    }
+    if (this.x < -this.radius) this.x = canvas.width + this.radius;
+    if (this.x > canvas.width + this.radius) this.x = -this.radius;
+    if (this.y < -this.radius) this.y = canvas.height + this.radius;
+    if (this.y > canvas.height + this.radius) this.y = -this.radius;
+  }
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  }
+}
 
 // Componente do background líquido animado
 function LiquidCanvas() {
@@ -43,43 +73,13 @@ function LiquidCanvas() {
       canvas.height = window.innerHeight;
     }
 
-    class Blob {
-      constructor() {
-        this.radius = Math.random() * 150 + 100;
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 2;
-        this.vy = (Math.random() - 0.5) * 2;
-        this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if (mouse.x !== undefined) {
-          const dx = mouse.x - this.x, dy = mouse.y - this.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 400) { this.x += dx * 0.01; this.y += dy * 0.01; }
-        }
-        if (this.x < -this.radius) this.x = canvas.width + this.radius;
-        if (this.x > canvas.width + this.radius) this.x = -this.radius;
-        if (this.y < -this.radius) this.y = canvas.height + this.radius;
-        if (this.y > canvas.height + this.radius) this.y = -this.radius;
-      }
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
-      }
-    }
-
     resize();
-    blobs = Array.from({ length: 8 }, () => new Blob());
+    blobs = Array.from({ length: 8 }, () => new LiquidBlob(canvas, COLORS));
 
     function animate() {
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      blobs.forEach(b => { b.update(); b.draw(); });
+      blobs.forEach(b => { b.update(canvas, mouse); b.draw(ctx); });
       animId = requestAnimationFrame(animate);
     }
     animate();
@@ -186,7 +186,7 @@ export default function App() {
   }, [currentUser]);
 
   // --- BUSCAR DADOS DO BANCO ---
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!currentUser) return;
 
     // Função helper para lidar com o json seguro e garantir arrays
@@ -219,11 +219,11 @@ export default function App() {
       safeFetch('/api/users', setUsers)
     ]);
     setLoadError(results.some((r) => r.status === 'rejected' || r.value === false));
-  };
+  }, [currentUser]);
 
   useEffect(() => {
     if (isAuthenticated) loadData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadData]);
 
   // --- AUTH ---
   const handleLogin = async (e) => {
@@ -532,6 +532,8 @@ export default function App() {
     const contratosAtivos = clients.filter(c => c.contract_status === 'Ativo').length;
     const contratosVencidos = clients.filter(c => c.contract_status === 'Vencido').length;
     return { gestaoAReceber, trafegoAReceber, totalAReceber, gestaoRecebido, trafegoRecebido, totalRecebido, vencido, folhaMes, saldo, contratosAtivos, contratosVencidos };
+    // Preserva a atualização dos KPIs apenas quando dados ou período mudam.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [receivables, empPayments, transactions, clients, period]);
 
   if (!isLoaded) return null;
@@ -560,7 +562,7 @@ export default function App() {
         <div className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-40 h-auto mb-2">
-              <img src="/logo.png" alt="UpValor" className="w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
+              <Image unoptimized src="/logo.png" alt="UpValor" className="w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
             </div>
           </div>
           {loginError && <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">{loginError}</div>}
@@ -604,8 +606,6 @@ export default function App() {
     if (p.status !== 'Pendente') return false;
     return isDateInScope(p.due_date || p.dueDate, period, now);
   });
-  const expiredContracts = clients.filter(c => c.contract_status === 'Vencido');
-
   const handleReceive = (id) => {
     const item = receivables.find((r) => r.id === id);
     return item ? markReceivableAsPaid(item) : Promise.resolve();
@@ -616,8 +616,15 @@ export default function App() {
     return item ? markEmpPaymentAsPaid(item) : Promise.resolve();
   };
 
+  const toggleClientExpand = (id) => {
+    setExpandedClients((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleEmpExpand = (id) => {
+    setExpandedEmployees((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
-    <MotionConfig reducedMotion="user">
       <div className="min-h-screen bg-bg text-fg font-sans relative">
         <AppHeader
           navItems={navItems}
@@ -627,321 +634,132 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        <main className="max-w-7xl mx-auto px-3 md:px-8 pt-6 md:pt-8 pb-28 md:pb-12 space-y-6 md:space-y-8">
-          {activeTab !== 'painel' && (
-            <div className="flex justify-between items-center">
-              <h1 className="text-2xl md:text-3xl font-bold text-fg capitalize">
-                {activeTab === 'fluxo' ? 'Fluxo de Caixa' : activeTab === 'funcionarios' ? 'Funcionários' : activeTab}
-              </h1>
-              {(activeTab === 'clientes' || activeTab === 'funcionarios') && (
-                <button
-                  type="button"
-                  onClick={() => setModal({ isOpen: true, type: activeTab === 'clientes' ? 'client' : 'employee', data: null, parentId: null, parentName: '' })}
-                  className="flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-accent/20 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" /><span>{activeTab === 'clientes' ? 'Novo Cliente' : 'Novo Funcionário'}</span>
-                </button>
-              )}
-              {activeTab === 'fluxo' && (
-                <button
-                  type="button"
-                  onClick={() => setModal({ isOpen: true, type: 'transaction', data: null, parentId: null, parentName: '' })}
-                  className="flex items-center gap-1.5 bg-accent hover:bg-accent/90 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-sm font-medium shadow-lg shadow-accent/20 transition-colors cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" /><span>Nova Transação</span>
-                </button>
-              )}
-            </div>
-          )}
+        <main className="max-w-7xl mx-auto px-3 md:px-8 pt-6 md:pt-8 pb-36 md:pb-24 space-y-6 md:space-y-8">
+          <AnimatePresence mode="wait">
+            {activeTab === 'painel' && isClient && (
+              <motion.div
+                key="tab-painel"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <DashboardPanel
+                  kpis={kpis}
+                  period={period}
+                  periodLabel={periodLabel}
+                  isCurrent={isCurrent}
+                  onFilterChange={handleFilterChange}
+                  onShift={handleShift}
+                  receivableItems={pendingReceivables.map((r) => ({
+                    id: r.id,
+                    name: r.client_name,
+                    detail: r.description,
+                    installment: parseInstallment(r.description),
+                    dueDate: r.due_date,
+                    status: r.status,
+                    amount: r.amount,
+                  }))}
+                  paymentItems={pendingEmpPayments.map((p) => ({
+                    id: p.id,
+                    name: p.employee_name,
+                    detail: [p.employee_role, p.description].filter(Boolean).join(' · '),
+                    installment: parseInstallment(p.description),
+                    dueDate: p.due_date,
+                    status: p.status,
+                    amount: p.amount,
+                  }))}
+                  onReceive={handleReceive}
+                  onPay={handlePay}
+                  chartData={buildChartData(receivables, empPayments, { months: 6, today: now })}
+                  transactions={transactions}
+                  contracts={{
+                    active: kpis.contratosAtivos,
+                    expired: kpis.contratosVencidos,
+                    totalClients: clients.filter((c) => c.contract_status !== 'Cancelado').length,
+                  }}
+                  loadError={loadError}
+                  onRetry={loadData}
+                />
+              </motion.div>
+            )}
 
-          {/* ===== PAINEL ===== */}
-          {activeTab === 'painel' && isClient && (
-            <DashboardPanel
-              key="painel"
-              kpis={kpis}
-              period={period}
-              periodLabel={periodLabel}
-              isCurrent={isCurrent}
-              onFilterChange={handleFilterChange}
-              onShift={handleShift}
-              receivableItems={pendingReceivables.map((r) => ({
-                id: r.id,
-                name: r.client_name,
-                detail: r.description,
-                installment: parseInstallment(r.description),
-                dueDate: r.due_date,
-                status: r.status,
-                amount: r.amount,
-              }))}
-              paymentItems={pendingEmpPayments.map((p) => ({
-                id: p.id,
-                name: p.employee_name,
-                detail: [p.employee_role, p.description].filter(Boolean).join(' · '),
-                installment: parseInstallment(p.description),
-                dueDate: p.due_date,
-                status: p.status,
-                amount: p.amount,
-              }))}
-              onReceive={handleReceive}
-              onPay={handlePay}
-              chartData={buildChartData(receivables, empPayments, { months: 6, today: now })}
-              transactions={transactions}
-              contracts={{
-                active: kpis.contratosAtivos,
-                expired: kpis.contratosVencidos,
-                totalClients: clients.filter((c) => c.contract_status !== 'Cancelado').length,
-              }}
-              loadError={loadError}
-              onRetry={loadData}
-            />
-          )}
+            {activeTab === 'clientes' && (
+              <motion.div
+                key="tab-clientes"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <ClientesSection
+                  clients={clients}
+                  receivables={receivables}
+                  expandedClients={expandedClients}
+                  onToggleExpand={toggleClientExpand}
+                  onOpenModal={setModal}
+                  onRenewContract={handleRenewContract}
+                  onCancelContract={handleCancelContract}
+                  onDeleteClient={handleDeleteClient}
+                  onMarkReceivablePaid={markReceivableAsPaid}
+                  onDeleteReceivable={handleDeleteReceivable}
+                />
+              </motion.div>
+            )}
 
-          {/* ===== CLIENTES ===== */}
-          {activeTab === 'clientes' && (
-            <div className="space-y-4">
-              {/* Seção: Contratos Vencidos */}
-              {expiredContracts.length > 0 && (
-                <div className="bg-neg/5 border border-neg/20 rounded-2xl p-4 space-y-3">
-                  <h3 className="text-neg font-semibold text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" /> Contratos Vencidos ({expiredContracts.length})
-                  </h3>
-                  {expiredContracts.map(c => (
-                    <div key={c.id} className="flex items-center justify-between bg-bg/60 rounded-xl p-3">
-                      <div>
-                        <p className="text-fg font-medium text-sm">{c.name}</p>
-                        <p className="text-subtle text-xs mt-0.5">{c.contract_months} mês(es) · {c.payment_frequency} · {formatMoney(c.monthly_fee)}/recorrência</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleRenewContract(c)}
-                          className="flex items-center gap-1 text-xs text-pos border border-pos/20 px-3 py-1.5 rounded-lg hover:bg-pos/10 transition-colors"
-                        >
-                          <RefreshCw className="w-3 h-3" /> Renovar
-                        </button>
-                        <button
-                          onClick={() => handleCancelContract(c)}
-                          className="flex items-center gap-1 text-xs text-neg border border-neg/20 px-3 py-1.5 rounded-lg hover:bg-neg/10 transition-colors"
-                        >
-                          <XCircle className="w-3 h-3" /> Cancelar
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            {activeTab === 'funcionarios' && (
+              <motion.div
+                key="tab-funcionarios"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <FuncionariosSection
+                  employees={employees}
+                  empPayments={empPayments}
+                  expandedEmployees={expandedEmployees}
+                  onToggleExpand={toggleEmpExpand}
+                  onOpenModal={setModal}
+                  onDeleteEmployee={handleDeleteEmployee}
+                  onMarkEmpPaymentPaid={markEmpPaymentAsPaid}
+                  onDeleteEmpPayment={handleDeleteEmpPayment}
+                />
+              </motion.div>
+            )}
 
-              {clients.filter(c => c.contract_status !== 'Cancelado').length === 0 && (
-                <div className="bg-fg/5 rounded-2xl p-10 text-center text-subtle italic border border-line">
-                  Nenhum cliente ativo. Clique em &quot;Novo Cliente&quot; para começar.
-                </div>
-              )}
-              {clients.filter(c => c.contract_status !== 'Cancelado').map(client => {
-                const clientRecs = receivables.filter(r => r.client_id === client.id);
-                const isExpanded = expandedClients[client.id];
-                const pendingSum = clientRecs.filter(r => r.status !== 'Pago' && r.category !== 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
-                const trafegoSum = clientRecs.filter(r => r.status !== 'Pago' && r.category === 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
-                const statusColor = client.contract_status === 'Ativo' ? 'text-pos' : client.contract_status === 'Vencido' ? 'text-neg' : 'text-subtle';
-                return (
-                  <div key={client.id} className="bg-fg/5 rounded-2xl border border-line overflow-hidden">
-                    <div className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <button onClick={() => setExpandedClients(prev => ({ ...prev, [client.id]: !prev[client.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-muted hover:text-fg transition-colors">
-                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                        </button>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-fg font-semibold">{client.name}</p>
-                            <span className={`text-[10px] font-bold uppercase ${statusColor}`}>{client.contract_status || 'Ativo'}</span>
-                          </div>
-                          <p className="text-subtle text-xs mt-0.5">
-                            {client.payment_frequency || 'Mensal'} · {client.contract_months || 1} mês(es) ·
-                            Gestão: <span className="text-pos">{formatMoney(pendingSum)}</span>
-                            {trafegoSum > 0 && <> · Tráfego: <span className="text-traffic">{formatMoney(trafegoSum)}</span></>}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => setModal({ isOpen: true, type: 'receivable', data: null, parentId: client.id, parentName: client.name })}
-                          className="flex items-center gap-1 text-xs text-pos border border-pos/20 px-2.5 py-1.5 rounded-lg hover:bg-pos/10 transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Cobrança
-                        </button>
-                        {client.contract_status === 'Vencido' && (
-                          <button onClick={() => handleRenewContract(client)} aria-label="Renovar contrato" className="text-muted hover:text-pos p-1.5 rounded transition-colors" title="Renovar contrato">
-                            <RefreshCw className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} aria-label="Editar cliente" className="text-muted hover:text-accent-fg p-1.5 rounded transition-colors">
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleCancelContract(client)} aria-label="Cancelar contrato" className="text-muted hover:text-neg p-1.5 rounded transition-colors" title="Cancelar contrato">
-                          <XCircle className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => handleDeleteClient(client.id, client.name)} aria-label="Excluir cliente" className="text-muted hover:text-neg p-1.5 rounded transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div className="border-t border-line p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
-                        {clientRecs.length === 0 ? (
-                          <p className="text-subtle text-sm italic text-center py-2">Nenhuma cobrança registrada.</p>
-                        ) : (
-                          clientRecs.map(r => (
-                            <div key={r.id} className="bg-bg/60 rounded-lg p-3">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className="text-fg text-sm font-medium truncate">{r.description}</p>
-                                    {r.category === 'trafego' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-traffic/20 text-traffic">Tráfego</span>}
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                    <StatusBadge status={r.status} />
-                                    <span className="text-subtle text-xs">{formatDate(r.due_date)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-2 shrink-0">
-                                  <span className="font-mono text-sm font-semibold" style={{ color: r.status === 'Pago' ? 'var(--uv-pos)' : 'var(--uv-fg)' }}>{formatMoney(r.amount)}</span>
-                                  <div className="flex items-center gap-1">
-                                    {r.status !== 'Pago' && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-accent-fg border border-accent/20 px-2 py-1 rounded hover:bg-accent/10">Receber</button>}
-                                    <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} aria-label="Editar cobrança" className="text-muted hover:text-accent-fg p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                                    <button onClick={() => handleDeleteReceivable(r)} aria-label="Excluir cobrança" className="text-muted hover:text-neg p-1"><Trash2 className="w-3.5 h-3.5" /></button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+            {activeTab === 'fluxo' && (
+              <motion.div
+                key="tab-fluxo"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <FluxoSection
+                  transactions={transactions}
+                  onOpenModal={setModal}
+                  onDeleteTransaction={handleDeleteTransaction}
+                />
+              </motion.div>
+            )}
 
-          {/* ===== FUNCIONÁRIOS ===== */}
-          {activeTab === 'funcionarios' && (
-            <div className="space-y-3">
-              {employees.length === 0 && (
-                <div className="bg-fg/5 rounded-2xl p-10 text-center text-subtle italic border border-line">
-                  Nenhum funcionário cadastrado. Clique em &quot;Novo Funcionário&quot; para começar.
-                </div>
-              )}
-              {employees.map(emp => {
-                const empPays = empPayments.filter(p => p.employee_id === emp.id);
-                const isExpanded = expandedEmployees[emp.id];
-                const pendingSum = empPays.filter(p => p.status === 'Pendente').reduce((a, b) => a + parseFloat(b.amount), 0);
-                return (
-                  <div key={emp.id} className="bg-fg/5 rounded-2xl border border-line overflow-hidden">
-                    <div className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-4">
-                        <button onClick={() => setExpandedEmployees(prev => ({ ...prev, [emp.id]: !prev[emp.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-muted hover:text-fg transition-colors">
-                          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                        </button>
-                        <div>
-                          <p className="text-fg font-semibold">{emp.name}</p>
-                          <p className="text-subtle text-xs mt-0.5">{emp.role} · {empPays.length} pagamento(s) · A pagar: <span className="text-warn">{formatMoney(pendingSum)}</span></p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setModal({ isOpen: true, type: 'empPayment', data: null, parentId: emp.id, parentName: emp.name })}
-                          className="flex items-center gap-1.5 text-xs text-warn border border-warn/20 px-3 py-1.5 rounded-lg hover:bg-warn/10 transition-colors"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> Novo Pagamento
-                        </button>
-                        <button onClick={() => setModal({ isOpen: true, type: 'employee', data: emp, parentId: null, parentName: '' })} aria-label="Editar funcionário" className="text-muted hover:text-accent-fg p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteEmployee(emp.id, emp.name)} aria-label="Excluir funcionário" className="text-muted hover:text-neg p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div className="border-t border-line p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
-                        {empPays.length === 0 ? (
-                          <p className="text-subtle text-sm italic text-center py-2">Nenhum pagamento registrado.</p>
-                        ) : (
-                          empPays.map(p => (
-                            <div key={p.id} className="bg-bg/60 rounded-lg p-3">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="text-fg text-sm font-medium truncate">{p.description}</p>
-                                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                                    <StatusBadge status={p.status} />
-                                    <span className="text-subtle text-xs">{formatDate(p.due_date)}</span>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-end gap-2 shrink-0">
-                                  <span className="font-mono text-sm font-semibold" style={{ color: p.status === 'Pago' ? 'var(--uv-pos)' : 'var(--uv-fg)' }}>{formatMoney(p.amount)}</span>
-                                  <div className="flex items-center gap-1">
-                                    {p.status !== 'Pago' && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-warn border border-warn/20 px-2 py-1 rounded hover:bg-warn/10">Pagar</button>}
-                                    <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} aria-label="Editar pagamento" className="text-muted hover:text-accent-fg p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                                    <button onClick={() => handleDeleteEmpPayment(p)} aria-label="Excluir pagamento" className="text-muted hover:text-neg p-1"><Trash2 className="w-3.5 h-3.5" /></button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ===== FLUXO DE CAIXA ===== */}
-          {activeTab === 'fluxo' && (
-            <div className="space-y-2">
-              {transactions.length === 0 && (
-                <div className="bg-fg/5 rounded-2xl p-8 text-center text-subtle italic border border-line">Nenhuma transação registrada.</div>
-              )}
-              {transactions.map(t => (
-                <div key={t.id} className="bg-fg/5 rounded-xl border border-line px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-fg font-medium text-sm truncate">{t.description}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-pos/20 text-pos' : 'bg-neg/20 text-neg'}`}>{t.type}</span>
-                        <span className="text-subtle text-xs">{formatDate(t.date)}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? 'var(--uv-pos)' : 'var(--uv-neg)' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
-                      <div className="flex gap-1">
-                        <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} aria-label="Editar transação" className="text-muted hover:text-accent-fg p-1"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteTransaction(t)} aria-label="Excluir transação" className="text-muted hover:text-neg p-1"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* ===== ADMIN ===== */}
-          {activeTab === 'admin' && (
-            <div className="bg-fg/5 rounded-2xl overflow-hidden border border-line">
-              <table className="w-full text-left border-collapse">
-                <thead><tr className="bg-surface/80 text-muted text-sm"><th className="p-4">Nome</th><th className="p-4">E-mail</th><th className="p-4">Função</th><th className="p-4 text-right">Ação</th></tr></thead>
-                <tbody className="divide-y divide-line">
-                  {users.map(u => (
-                    <tr key={u.id}>
-                      <td className="p-4 text-fg font-medium">{u.name}</td>
-                      <td className="p-4 text-muted">{u.email}</td>
-                      <td className="p-4 capitalize">{u.role}</td>
-                      <td className="p-4 text-right">
-                        {u.id !== currentUser?.id && (
-                          <button onClick={() => handleDeleteUser(u.id)} aria-label="Excluir usuário" className="text-muted hover:text-neg"><Trash2 className="w-4 h-4 inline" /></button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+            {activeTab === 'admin' && (
+              <motion.div
+                key="tab-admin"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <AdminSection
+                  users={users}
+                  currentUserId={currentUser?.id}
+                  onDeleteUser={handleDeleteUser}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
 
         {/* ===== MODAL ===== */}
@@ -1086,6 +904,5 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
-    </MotionConfig>
   );
 }

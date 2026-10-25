@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    output: 'export', serverExternalPackages: ['mysql2'],
+    ...(process.env.CAPACITOR_BUILD === 'true' ? { output: 'export' } : {}),
+    serverExternalPackages: ['mysql2'],
 
     // Remover header X-Powered-By para segurança
     poweredByHeader: false,

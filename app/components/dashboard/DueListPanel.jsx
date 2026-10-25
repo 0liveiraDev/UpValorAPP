@@ -4,6 +4,20 @@ import React, { useState, useRef } from 'react';
 import StatusBadge from '@/app/components/ui/StatusBadge.jsx';
 import { formatMoney, formatDate } from '@/lib/dashboard/format.js';
 
+function getInitials(name = '') {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'UV';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+const AVATAR_TONES = [
+  'bg-accent/15 text-accent-fg border-accent/25',
+  'bg-pos/15 text-pos border-pos/25',
+  'bg-traffic/15 text-traffic border-traffic/25',
+  'bg-warn/15 text-warn border-warn/25',
+];
+
 export default function DueListPanel({
   title,
   icon: Icon,
@@ -16,16 +30,11 @@ export default function DueListPanel({
   canAct = false,
   onAction,
   emptyText = 'Nenhum item.',
-  initialLimit = 6,
 }) {
-  const [expanded, setExpanded] = useState(false);
   const [busyIds, setBusyIds] = useState(() => new Set());
   const inFlightRef = useRef(new Set());
 
   const safeItems = Array.isArray(items) ? items : [];
-  const displayedItems = expanded
-    ? safeItems
-    : safeItems.slice(0, initialLimit);
 
   const handleAction = async (id) => {
     if (inFlightRef.current.has(id)) return;
@@ -47,72 +56,84 @@ export default function DueListPanel({
   };
 
   return (
-    <div className="uv-card p-4 sm:p-5 flex flex-col justify-between">
-      <div>
-        {/* Cabeçalho */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-line mb-3">
-          <div className="flex items-center gap-2 min-w-0">
-            {Icon && (
+    <div className="uv-card p-4 sm:p-5 flex flex-col">
+      {/* Cabeçalho */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-line mb-2">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {Icon && (
+            <span className="w-8 h-8 rounded-full bg-surface-2 border border-line inline-flex items-center justify-center shrink-0">
               <Icon
-                className={`w-5 h-5 shrink-0 ${iconClass}`}
+                className={`w-4 h-4 shrink-0 ${iconClass}`}
                 aria-hidden="true"
               />
-            )}
-            <h2 className="text-base font-semibold text-fg truncate">
-              {title}
-            </h2>
-            {periodLabel && (
-              <span className="text-subtle text-xs sm:text-sm font-normal truncate">
-                {periodLabel}
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-muted font-medium shrink-0">
-            {safeItems.length === 1
-              ? '1 item'
-              : `${safeItems.length} itens`}
-          </span>
+            </span>
+          )}
+          <h2 className="text-base font-semibold text-fg truncate">{title}</h2>
+          {periodLabel && (
+            <span className="text-subtle text-xs sm:text-sm font-normal truncate">
+              {periodLabel}
+            </span>
+          )}
         </div>
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-2 text-muted border border-line shrink-0 uv-num">
+          {safeItems.length === 1 ? '1 item' : `${safeItems.length} itens`}
+        </span>
+      </div>
 
-        {/* Lista ou Estado Vazio */}
-        {safeItems.length === 0 ? (
-          <p className="text-muted text-sm py-8 text-center">{emptyText}</p>
-        ) : (
+      {/* Lista com Scroll interno */}
+      {safeItems.length === 0 ? (
+        <p className="text-muted text-sm py-10 text-center">{emptyText}</p>
+      ) : (
+        <div
+          className="max-h-[400px] overflow-y-auto custom-scrollbar pr-1.5 -mr-1"
+          role="region"
+          aria-label={title}
+          tabIndex={0}
+        >
           <ul className="divide-y divide-line">
-            {displayedItems.map((item) => {
+            {safeItems.map((item, idx) => {
               const isBusy = busyIds.has(item.id);
+              const avatarTone = AVATAR_TONES[idx % AVATAR_TONES.length];
               return (
                 <li
                   key={item.id}
-                  className="py-3 sm:py-3.5 first:pt-0 last:pb-0"
+                  className="py-3 sm:py-3.5 first:pt-1 last:pb-1"
                 >
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
-                    {/* Esquerda: Informações */}
-                    <div className="min-w-0 space-y-1">
+                    {/* Esquerda: Avatar + Informações */}
+                    <div className="flex items-start gap-3 min-w-0">
                       <div
-                        className="truncate font-medium text-fg text-sm sm:text-base"
-                        title={item.name}
+                        className={`w-9 h-9 rounded-full border text-xs font-semibold inline-flex items-center justify-center shrink-0 mt-0.5 ${avatarTone}`}
+                        aria-hidden="true"
                       >
-                        {item.name}
+                        {getInitials(item.name)}
                       </div>
-                      {item.detail && (
+                      <div className="min-w-0 space-y-1">
                         <div
-                          className="truncate text-sm text-muted"
-                          title={item.detail}
+                          className="truncate font-medium text-fg text-sm sm:text-base"
+                          title={item.name}
                         >
-                          {item.detail}
+                          {item.name}
                         </div>
-                      )}
-                      <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                        <StatusBadge status={item.status} />
-                        <span className="text-subtle text-[13px]">
-                          Vence {formatDate(item.dueDate)}
-                        </span>
-                        {item.installment && (
-                          <span className="inline-flex items-center text-xs px-2 py-0.5 rounded bg-surface-2 text-muted border border-line">
-                            Parcela {item.installment}
-                          </span>
+                        {item.detail && (
+                          <div
+                            className="truncate text-xs sm:text-sm text-muted"
+                            title={item.detail}
+                          >
+                            {item.detail}
+                          </div>
                         )}
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                          <StatusBadge status={item.status} />
+                          <span className="text-subtle text-[13px] uv-num">
+                            Vence {formatDate(item.dueDate)}
+                          </span>
+                          {item.installment && (
+                            <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-md bg-surface-2 text-muted border border-line uv-num">
+                              Parcela {item.installment}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -140,22 +161,6 @@ export default function DueListPanel({
               );
             })}
           </ul>
-        )}
-      </div>
-
-      {/* Botão Mostrar todos / Mostrar menos */}
-      {safeItems.length > initialLimit && (
-        <div className="pt-4 border-t border-line mt-4 text-center">
-          <button
-            type="button"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((prev) => !prev)}
-            className="text-xs font-semibold text-accent-fg hover:underline transition-colors duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 cursor-pointer"
-          >
-            {expanded
-              ? 'Mostrar menos'
-              : `Mostrar todos (${safeItems.length})`}
-          </button>
         </div>
       )}
     </div>

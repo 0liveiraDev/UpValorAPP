@@ -11,50 +11,66 @@ export default function OperationalStrip({
   const segments = [
     {
       label: 'Contratos Ativos',
+      subtitle: 'Recorrências em vigor',
       value: active,
       icon: CheckCircle2,
-      colorClass: 'text-pos',
+      badgeTone: 'bg-pos/12 text-pos border-pos/25',
+      tag: 'Em dia',
     },
     {
       label: 'Vencidos',
+      subtitle: 'Requerem renovação',
       value: expired,
       icon: AlertCircle,
-      colorClass: 'text-neg',
+      badgeTone: 'bg-neg/12 text-neg border-neg/25',
+      tag: 'Atenção',
     },
     {
       label: 'Total de Clientes',
+      subtitle: 'Carteira ativa cadastrada',
       value: totalClients,
       icon: Users,
-      colorClass: 'text-muted',
+      badgeTone: 'bg-accent/12 text-accent-fg border-accent/25',
+      tag: 'Carteira',
     },
   ];
 
   return (
-    <div className="uv-card p-4 sm:p-5">
-      <div className="grid grid-cols-3 divide-x divide-line">
-        {segments.map((item) => {
-          const Icon = item.icon;
-          return (
-            <div
-              key={item.label}
-              className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 px-2 sm:px-4 text-center sm:text-left"
-            >
-              <Icon
-                className={`w-5 h-5 shrink-0 ${item.colorClass}`}
-                aria-hidden="true"
-              />
-              <div>
-                <div className="text-2xl font-semibold text-fg uv-num leading-tight">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {segments.map((item) => {
+        const Icon = item.icon;
+        return (
+          <div
+            key={item.label}
+            className="uv-card p-4 sm:p-5 flex items-center justify-between gap-3"
+          >
+            <div className="flex items-center gap-3.5 min-w-0">
+              <span
+                className={`w-10 h-10 rounded-full border inline-flex items-center justify-center shrink-0 ${item.badgeTone}`}
+              >
+                <Icon className="w-5 h-5" aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <div className="text-2xl font-bold text-fg uv-num leading-tight">
                   {item.value}
                 </div>
-                <div className="text-[13px] text-muted leading-tight">
+                <div className="text-xs sm:text-sm font-medium text-fg truncate">
                   {item.label}
+                </div>
+                <div className="text-[11px] text-subtle truncate">
+                  {item.subtitle}
                 </div>
               </div>
             </div>
-          );
-        })}
-      </div>
+
+            <span
+              className={`hidden md:inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border shrink-0 ${item.badgeTone}`}
+            >
+              {item.tag}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
