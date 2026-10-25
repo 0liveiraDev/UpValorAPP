@@ -141,7 +141,8 @@ function LiquidCanvas() {
   );
 }
 
-const inputClass = "w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500";
+const loginInputClass = "w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500";
+const inputClass = "w-full bg-surface-2 border border-line-strong text-fg placeholder:text-subtle rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent";
 
 const StatusBadge = ({ status }) => {
   const map = {
@@ -727,16 +728,16 @@ export default function App() {
           {loginError && <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">{loginError}</div>}
           {isLoginMode ? (
             <form onSubmit={handleLogin} className="space-y-4">
-              <input name="email" type="email" placeholder="Seu e-mail" className={inputClass} required />
-              <input name="password" type="password" placeholder="Sua senha" className={inputClass} required />
+              <input name="email" type="email" placeholder="Seu e-mail" className={loginInputClass} required />
+              <input name="password" type="password" placeholder="Sua senha" className={loginInputClass} required />
               <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white font-semibold rounded-lg px-4 py-3 shadow-lg shadow-blue-500/25">Entrar no Sistema</button>
               <p className="text-center text-sm text-slate-400 mt-4">Não tem uma conta? <button type="button" onClick={() => setIsLoginMode(false)} className="text-blue-400 hover:text-blue-300 font-medium">Cadastre-se</button></p>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
-              <input name="name" type="text" placeholder="Seu nome completo" className={inputClass} required />
-              <input name="email" type="email" placeholder="Seu e-mail" className={inputClass} required />
-              <input name="password" type="password" placeholder="Escolha uma senha" className={inputClass} required minLength={6} />
+              <input name="name" type="text" placeholder="Seu nome completo" className={loginInputClass} required />
+              <input name="email" type="email" placeholder="Seu e-mail" className={loginInputClass} required />
+              <input name="password" type="password" placeholder="Escolha uma senha" className={loginInputClass} required minLength={6} />
               <button type="submit" className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-semibold rounded-lg px-4 py-3 shadow-lg shadow-emerald-500/25 mt-2">Criar Minha Conta</button>
               <p className="text-center text-sm text-slate-400 mt-4">Já tem uma conta? <button type="button" onClick={() => setIsLoginMode(true)} className="text-blue-400 hover:text-blue-300 font-medium">Fazer login</button></p>
             </form>
@@ -770,7 +771,7 @@ export default function App() {
   const expiredContracts = clients.filter(c => c.contract_status === 'Vencido');
 
   return (
-    <div className="min-h-screen bg-[#0f1117] text-slate-200 font-sans relative pb-32">
+    <div className="min-h-screen bg-bg text-fg font-sans relative pb-32">
       <div className="fixed top-4 right-4 z-50 flex items-center bg-[#151821]/80 backdrop-blur-md p-1.5 rounded-full border border-white/5 shadow-xl">
         <span className="text-sm font-medium text-white mr-3 ml-4">{currentUser?.name || "Usuário"}</span>
         <button onClick={handleLogout} aria-label="Sair do sistema" className="p-2 text-slate-400 hover:text-rose-400 rounded-full bg-white/5 mr-1"><LogOut className="w-4 h-4" /></button>
@@ -1019,26 +1020,26 @@ export default function App() {
           <div className="space-y-4">
             {/* Seção: Contratos Vencidos */}
             {expiredContracts.length > 0 && (
-              <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 space-y-3">
-                <h3 className="text-rose-400 font-semibold text-sm flex items-center gap-2">
+              <div className="bg-neg/5 border border-neg/20 rounded-2xl p-4 space-y-3">
+                <h3 className="text-neg font-semibold text-sm flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" /> Contratos Vencidos ({expiredContracts.length})
                 </h3>
                 {expiredContracts.map(c => (
-                  <div key={c.id} className="flex items-center justify-between bg-[#0f1117]/60 rounded-xl p-3">
+                  <div key={c.id} className="flex items-center justify-between bg-bg/60 rounded-xl p-3">
                     <div>
-                      <p className="text-white font-medium text-sm">{c.name}</p>
-                      <p className="text-slate-500 text-xs mt-0.5">{c.contract_months} mês(es) · {c.payment_frequency} · {formatMoney(c.monthly_fee)}/recorrência</p>
+                      <p className="text-fg font-medium text-sm">{c.name}</p>
+                      <p className="text-subtle text-xs mt-0.5">{c.contract_months} mês(es) · {c.payment_frequency} · {formatMoney(c.monthly_fee)}/recorrência</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleRenewContract(c)}
-                        className="flex items-center gap-1 text-xs text-emerald-400 border border-emerald-500/20 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                        className="flex items-center gap-1 text-xs text-pos border border-pos/20 px-3 py-1.5 rounded-lg hover:bg-pos/10 transition-colors"
                       >
                         <RefreshCw className="w-3 h-3" /> Renovar
                       </button>
                       <button
                         onClick={() => handleCancelContract(c)}
-                        className="flex items-center gap-1 text-xs text-rose-400 border border-rose-500/20 px-3 py-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+                        className="flex items-center gap-1 text-xs text-neg border border-neg/20 px-3 py-1.5 rounded-lg hover:bg-neg/10 transition-colors"
                       >
                         <XCircle className="w-3 h-3" /> Cancelar
                       </button>
@@ -1049,7 +1050,7 @@ export default function App() {
             )}
 
             {clients.filter(c => c.contract_status !== 'Cancelado').length === 0 && (
-              <div className="bg-white/5 rounded-2xl p-10 text-center text-slate-500 italic border border-white/5">
+              <div className="bg-fg/5 rounded-2xl p-10 text-center text-subtle italic border border-line">
                 Nenhum cliente ativo. Clique em "Novo Cliente" para começar.
               </div>
             )}
@@ -1058,73 +1059,73 @@ export default function App() {
               const isExpanded = expandedClients[client.id];
               const pendingSum = clientRecs.filter(r => r.status !== 'Pago' && r.category !== 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
               const trafegoSum = clientRecs.filter(r => r.status !== 'Pago' && r.category === 'trafego').reduce((a, b) => a + parseFloat(b.amount), 0);
-              const statusColor = client.contract_status === 'Ativo' ? 'text-emerald-400' : client.contract_status === 'Vencido' ? 'text-rose-400' : 'text-slate-500';
+              const statusColor = client.contract_status === 'Ativo' ? 'text-pos' : client.contract_status === 'Vencido' ? 'text-neg' : 'text-subtle';
               return (
-                <div key={client.id} className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
+                <div key={client.id} className="bg-fg/5 rounded-2xl border border-line overflow-hidden">
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-3">
-                      <button onClick={() => setExpandedClients(prev => ({ ...prev, [client.id]: !prev[client.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-slate-400 hover:text-white transition-colors">
+                      <button onClick={() => setExpandedClients(prev => ({ ...prev, [client.id]: !prev[client.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-muted hover:text-fg transition-colors">
                         {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                       </button>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="text-white font-semibold">{client.name}</p>
+                          <p className="text-fg font-semibold">{client.name}</p>
                           <span className={`text-[10px] font-bold uppercase ${statusColor}`}>{client.contract_status || 'Ativo'}</span>
                         </div>
-                        <p className="text-slate-500 text-xs mt-0.5">
+                        <p className="text-subtle text-xs mt-0.5">
                           {client.payment_frequency || 'Mensal'} · {client.contract_months || 1} mês(es) ·
-                          Gestão: <span className="text-emerald-400">{formatMoney(pendingSum)}</span>
-                          {trafegoSum > 0 && <> · Tráfego: <span className="text-purple-400">{formatMoney(trafegoSum)}</span></>}
+                          Gestão: <span className="text-pos">{formatMoney(pendingSum)}</span>
+                          {trafegoSum > 0 && <> · Tráfego: <span className="text-traffic">{formatMoney(trafegoSum)}</span></>}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => setModal({ isOpen: true, type: 'receivable', data: null, parentId: client.id, parentName: client.name })}
-                        className="flex items-center gap-1 text-xs text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors"
+                        className="flex items-center gap-1 text-xs text-pos border border-pos/20 px-2.5 py-1.5 rounded-lg hover:bg-pos/10 transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" /> Cobrança
                       </button>
                       {client.contract_status === 'Vencido' && (
-                        <button onClick={() => handleRenewContract(client)} aria-label="Renovar contrato" className="text-slate-400 hover:text-emerald-400 p-1.5 rounded transition-colors" title="Renovar contrato">
+                        <button onClick={() => handleRenewContract(client)} aria-label="Renovar contrato" className="text-muted hover:text-pos p-1.5 rounded transition-colors" title="Renovar contrato">
                           <RefreshCw className="w-4 h-4" />
                         </button>
                       )}
-                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} aria-label="Editar cliente" className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors">
+                      <button onClick={() => setModal({ isOpen: true, type: 'client', data: client, parentId: null, parentName: '' })} aria-label="Editar cliente" className="text-muted hover:text-accent-fg p-1.5 rounded transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleCancelContract(client)} aria-label="Cancelar contrato" className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors" title="Cancelar contrato">
+                      <button onClick={() => handleCancelContract(client)} aria-label="Cancelar contrato" className="text-muted hover:text-neg p-1.5 rounded transition-colors" title="Cancelar contrato">
                         <XCircle className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDeleteClient(client.id, client.name)} aria-label="Excluir cliente" className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors">
+                      <button onClick={() => handleDeleteClient(client.id, client.name)} aria-label="Excluir cliente" className="text-muted hover:text-neg p-1.5 rounded transition-colors">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="border-t border-white/5 p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+                    <div className="border-t border-line p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
                       {clientRecs.length === 0 ? (
-                        <p className="text-slate-500 text-sm italic text-center py-2">Nenhuma cobrança registrada.</p>
+                        <p className="text-subtle text-sm italic text-center py-2">Nenhuma cobrança registrada.</p>
                       ) : (
                         clientRecs.map(r => (
-                          <div key={r.id} className="bg-[#0f1117]/60 rounded-lg p-3">
+                          <div key={r.id} className="bg-bg/60 rounded-lg p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1.5 flex-wrap">
-                                  <p className="text-slate-300 text-sm font-medium truncate">{r.description}</p>
-                                  {r.category === 'trafego' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-400">Tráfego</span>}
+                                  <p className="text-fg text-sm font-medium truncate">{r.description}</p>
+                                  {r.category === 'trafego' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-traffic/20 text-traffic">Tráfego</span>}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                   <StatusBadge status={r.status} />
-                                  <span className="text-slate-500 text-xs">{formatDate(r.due_date)}</span>
+                                  <span className="text-subtle text-xs">{formatDate(r.due_date)}</span>
                                 </div>
                               </div>
                               <div className="flex flex-col items-end gap-2 shrink-0">
-                                <span className="font-mono text-sm font-semibold" style={{ color: r.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(r.amount)}</span>
+                                <span className="font-mono text-sm font-semibold" style={{ color: r.status === 'Pago' ? 'var(--uv-pos)' : 'var(--uv-fg)' }}>{formatMoney(r.amount)}</span>
                                 <div className="flex items-center gap-1">
-                                  {r.status !== 'Pago' && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-blue-400 border border-blue-500/20 px-2 py-1 rounded hover:bg-blue-500/10">Receber</button>}
-                                  <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} aria-label="Editar cobrança" className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteReceivable(r)} aria-label="Excluir cobrança" className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                                  {r.status !== 'Pago' && <button onClick={() => markReceivableAsPaid(r)} className="text-xs text-accent-fg border border-accent/20 px-2 py-1 rounded hover:bg-accent/10">Receber</button>}
+                                  <button onClick={() => setModal({ isOpen: true, type: 'receivable', data: r, parentId: client.id, parentName: client.name })} aria-label="Editar cobrança" className="text-muted hover:text-accent-fg p-1"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteReceivable(r)} aria-label="Excluir cobrança" className="text-muted hover:text-neg p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             </div>
@@ -1144,7 +1145,7 @@ export default function App() {
         {activeTab === 'funcionarios' && (
           <div className="space-y-3">
             {employees.length === 0 && (
-              <div className="bg-white/5 rounded-2xl p-10 text-center text-slate-500 italic border border-white/5">
+              <div className="bg-fg/5 rounded-2xl p-10 text-center text-subtle italic border border-line">
                 Nenhum funcionário cadastrado. Clique em "Novo Funcionário" para começar.
               </div>
             )}
@@ -1153,49 +1154,49 @@ export default function App() {
               const isExpanded = expandedEmployees[emp.id];
               const pendingSum = empPays.filter(p => p.status === 'Pendente').reduce((a, b) => a + parseFloat(b.amount), 0);
               return (
-                <div key={emp.id} className="bg-white/5 rounded-2xl border border-white/5 overflow-hidden">
+                <div key={emp.id} className="bg-fg/5 rounded-2xl border border-line overflow-hidden">
                   <div className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-4">
-                      <button onClick={() => setExpandedEmployees(prev => ({ ...prev, [emp.id]: !prev[emp.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-slate-400 hover:text-white transition-colors">
+                      <button onClick={() => setExpandedEmployees(prev => ({ ...prev, [emp.id]: !prev[emp.id] }))} aria-label={isExpanded ? "Recolher detalhes" : "Expandir detalhes"} className="text-muted hover:text-fg transition-colors">
                         {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                       </button>
                       <div>
-                        <p className="text-white font-semibold">{emp.name}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{emp.role} · {empPays.length} pagamento(s) · A pagar: <span className="text-orange-400">{formatMoney(pendingSum)}</span></p>
+                        <p className="text-fg font-semibold">{emp.name}</p>
+                        <p className="text-subtle text-xs mt-0.5">{emp.role} · {empPays.length} pagamento(s) · A pagar: <span className="text-warn">{formatMoney(pendingSum)}</span></p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setModal({ isOpen: true, type: 'empPayment', data: null, parentId: emp.id, parentName: emp.name })}
-                        className="flex items-center gap-1.5 text-xs text-orange-400 border border-orange-500/20 px-3 py-1.5 rounded-lg hover:bg-orange-500/10 transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-warn border border-warn/20 px-3 py-1.5 rounded-lg hover:bg-warn/10 transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5" /> Novo Pagamento
                       </button>
-                      <button onClick={() => setModal({ isOpen: true, type: 'employee', data: emp, parentId: null, parentName: '' })} aria-label="Editar funcionário" className="text-slate-400 hover:text-blue-400 p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDeleteEmployee(emp.id, emp.name)} aria-label="Excluir funcionário" className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'employee', data: emp, parentId: null, parentName: '' })} aria-label="Editar funcionário" className="text-muted hover:text-accent-fg p-1.5 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteEmployee(emp.id, emp.name)} aria-label="Excluir funcionário" className="text-muted hover:text-neg p-1.5 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                   {isExpanded && (
-                    <div className="border-t border-white/5 p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
+                    <div className="border-t border-line p-3 space-y-2 max-h-72 overflow-y-auto custom-scrollbar">
                       {empPays.length === 0 ? (
-                        <p className="text-slate-500 text-sm italic text-center py-2">Nenhum pagamento registrado.</p>
+                        <p className="text-subtle text-sm italic text-center py-2">Nenhum pagamento registrado.</p>
                       ) : (
                         empPays.map(p => (
-                          <div key={p.id} className="bg-[#0f1117]/60 rounded-lg p-3">
+                          <div key={p.id} className="bg-bg/60 rounded-lg p-3">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="text-slate-300 text-sm font-medium truncate">{p.description}</p>
+                                <p className="text-fg text-sm font-medium truncate">{p.description}</p>
                                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                   <StatusBadge status={p.status} />
-                                  <span className="text-slate-500 text-xs">{formatDate(p.due_date)}</span>
+                                  <span className="text-subtle text-xs">{formatDate(p.due_date)}</span>
                                 </div>
                               </div>
                               <div className="flex flex-col items-end gap-2 shrink-0">
-                                <span className="font-mono text-sm font-semibold" style={{ color: p.status === 'Pago' ? '#10b981' : '#e2e8f0' }}>{formatMoney(p.amount)}</span>
+                                <span className="font-mono text-sm font-semibold" style={{ color: p.status === 'Pago' ? 'var(--uv-pos)' : 'var(--uv-fg)' }}>{formatMoney(p.amount)}</span>
                                 <div className="flex items-center gap-1">
-                                  {p.status !== 'Pago' && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-orange-400 border border-orange-500/20 px-2 py-1 rounded hover:bg-orange-500/10">Pagar</button>}
-                                  <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} aria-label="Editar pagamento" className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-3.5 h-3.5" /></button>
-                                  <button onClick={() => handleDeleteEmpPayment(p)} aria-label="Excluir pagamento" className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                                  {p.status !== 'Pago' && <button onClick={() => markEmpPaymentAsPaid(p)} className="text-xs text-warn border border-warn/20 px-2 py-1 rounded hover:bg-warn/10">Pagar</button>}
+                                  <button onClick={() => setModal({ isOpen: true, type: 'empPayment', data: p, parentId: emp.id, parentName: emp.name })} aria-label="Editar pagamento" className="text-muted hover:text-accent-fg p-1"><Edit2 className="w-3.5 h-3.5" /></button>
+                                  <button onClick={() => handleDeleteEmpPayment(p)} aria-label="Excluir pagamento" className="text-muted hover:text-neg p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                                 </div>
                               </div>
                             </div>
@@ -1214,23 +1215,23 @@ export default function App() {
         {activeTab === 'fluxo' && (
           <div className="space-y-2">
             {transactions.length === 0 && (
-              <div className="bg-white/5 rounded-2xl p-8 text-center text-slate-500 italic border border-white/5">Nenhuma transação registrada.</div>
+              <div className="bg-fg/5 rounded-2xl p-8 text-center text-subtle italic border border-line">Nenhuma transação registrada.</div>
             )}
             {transactions.map(t => (
-              <div key={t.id} className="bg-white/5 rounded-xl border border-white/5 px-4 py-3">
+              <div key={t.id} className="bg-fg/5 rounded-xl border border-line px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-white font-medium text-sm truncate">{t.description}</p>
+                    <p className="text-fg font-medium text-sm truncate">{t.description}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.type}</span>
-                      <span className="text-slate-500 text-xs">{formatDate(t.date)}</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${t.type === 'entrada' ? 'bg-pos/20 text-pos' : 'bg-neg/20 text-neg'}`}>{t.type}</span>
+                      <span className="text-subtle text-xs">{formatDate(t.date)}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? '#10b981' : '#f43f5e' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
+                    <span className="font-mono font-bold text-sm" style={{ color: t.type === 'entrada' ? 'var(--uv-pos)' : 'var(--uv-neg)' }}>{t.type === 'entrada' ? '+' : '-'} {formatMoney(t.amount)}</span>
                     <div className="flex gap-1">
-                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} aria-label="Editar transação" className="text-slate-400 hover:text-blue-400 p-1"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => handleDeleteTransaction(t)} aria-label="Excluir transação" className="text-slate-400 hover:text-rose-400 p-1"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => setModal({ isOpen: true, type: 'transaction', data: t, parentId: null, parentName: '' })} aria-label="Editar transação" className="text-muted hover:text-accent-fg p-1"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteTransaction(t)} aria-label="Excluir transação" className="text-muted hover:text-neg p-1"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </div>
@@ -1241,18 +1242,18 @@ export default function App() {
 
         {/* ===== ADMIN ===== */}
         {activeTab === 'admin' && (
-          <div className="bg-white/5 rounded-2xl overflow-hidden border border-white/5">
+          <div className="bg-fg/5 rounded-2xl overflow-hidden border border-line">
             <table className="w-full text-left border-collapse">
-              <thead><tr className="bg-[#151821]/80 text-slate-400 text-sm"><th className="p-4">Nome</th><th className="p-4">E-mail</th><th className="p-4">Função</th><th className="p-4 text-right">Ação</th></tr></thead>
-              <tbody className="divide-y divide-white/5">
+              <thead><tr className="bg-surface/80 text-muted text-sm"><th className="p-4">Nome</th><th className="p-4">E-mail</th><th className="p-4">Função</th><th className="p-4 text-right">Ação</th></tr></thead>
+              <tbody className="divide-y divide-line">
                 {users.map(u => (
                   <tr key={u.id}>
-                    <td className="p-4 text-white font-medium">{u.name}</td>
-                    <td className="p-4 text-slate-400">{u.email}</td>
+                    <td className="p-4 text-fg font-medium">{u.name}</td>
+                    <td className="p-4 text-muted">{u.email}</td>
                     <td className="p-4 capitalize">{u.role}</td>
                     <td className="p-4 text-right">
                       {u.id !== currentUser?.id && (
-                        <button onClick={() => handleDeleteUser(u.id)} aria-label="Excluir usuário" className="text-slate-400 hover:text-rose-400"><Trash2 className="w-4 h-4 inline" /></button>
+                        <button onClick={() => handleDeleteUser(u.id)} aria-label="Excluir usuário" className="text-muted hover:text-neg"><Trash2 className="w-4 h-4 inline" /></button>
                       )}
                     </td>
                   </tr>
@@ -1272,9 +1273,9 @@ export default function App() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-[#151821] border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-6 z-10"
+              className="relative bg-surface border border-line-strong rounded-2xl shadow-2xl w-full max-w-md p-6 z-10"
             >
-              <h3 className="text-xl font-bold text-white mb-1">
+              <h3 className="text-xl font-bold text-fg mb-1">
                 {modal.type === 'client' ? (modal.data ? 'Editar Cliente' : 'Novo Cliente') :
                   modal.type === 'receivable' ? (modal.data ? 'Editar Cobrança' : `Nova Cobrança — ${modal.parentName}`) :
                     modal.type === 'employee' ? (modal.data ? 'Editar Funcionário' : 'Novo Funcionário') :
@@ -1282,7 +1283,7 @@ export default function App() {
                         modal.type === 'transaction' ? (modal.data ? 'Editar Transação' : 'Nova Transação') : 'Dados'}
               </h3>
               {modal.parentName && (modal.type === 'receivable' || modal.type === 'empPayment') && !modal.data &&
-                <p className="text-slate-500 text-sm mb-4">Vinculado a: <span className="text-slate-300">{modal.parentName}</span></p>
+                <p className="text-subtle text-sm mb-4">Vinculado a: <span className="text-fg">{modal.parentName}</span></p>
               }
               <form onSubmit={handleSave} className="space-y-4 mt-4">
                 {/* Cliente */}
@@ -1291,11 +1292,11 @@ export default function App() {
                     <input name="name" defaultValue={modal.data?.name} placeholder="Nome da Empresa / Cliente" className={inputClass} required />
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-slate-400 text-xs mb-1 block">Meses de Contrato</label>
+                        <label className="text-muted text-xs mb-1 block">Meses de Contrato</label>
                         <input name="contract_months" type="number" min="1" defaultValue={modal.data?.contract_months || 1} className={inputClass} required />
                       </div>
                       <div>
-                        <label className="text-slate-400 text-xs mb-1 block">Frequência de Pagamento</label>
+                        <label className="text-muted text-xs mb-1 block">Frequência de Pagamento</label>
                         <select name="payment_frequency" defaultValue={modal.data?.payment_frequency || 'Mensal'} className={inputClass}>
                           <option value="Semanal">Semanal</option>
                           <option value="Quinzenal">Quinzenal</option>
@@ -1305,23 +1306,23 @@ export default function App() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-slate-400 text-xs mb-1 block">Valor da Gestão (R$)</label>
+                        <label className="text-muted text-xs mb-1 block">Valor da Gestão (R$)</label>
                         <input name="monthly_fee" type="number" step="0.01" defaultValue={modal.data?.monthly_fee || ''} placeholder="0,00" className={inputClass} required />
                       </div>
                       <div>
-                        <label className="text-slate-400 text-xs mb-1 block">Data 1º Pagamento</label>
-                        <input name="contract_start" type="date" defaultValue={modal.data?.contract_start?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} required />
+                        <label className="text-muted text-xs mb-1 block">Data 1º Pagamento</label>
+                        <input name="contract_start" type="date" defaultValue={modal.data?.contract_start?.split('T')[0] || today()} className={inputClass} required />
                       </div>
                     </div>
-                    <div className="border-t border-white/5 pt-3">
-                      <p className="text-slate-400 text-xs mb-2">Custo de Tráfego <span className="text-slate-500">(opcional — mesma frequência)</span></p>
+                    <div className="border-t border-line pt-3">
+                      <p className="text-muted text-xs mb-2">Custo de Tráfego <span className="text-subtle">(opcional — mesma frequência)</span></p>
                       <div>
-                        <label className="text-slate-400 text-xs mb-1 block">Valor Tráfego (R$)</label>
+                        <label className="text-muted text-xs mb-1 block">Valor Tráfego (R$)</label>
                         <input name="traffic_cost" type="number" step="0.01" defaultValue={modal.data?.traffic_cost || ''} placeholder="0,00" className={inputClass} />
                       </div>
                     </div>
                     {!modal.data && (
-                      <p className="text-blue-400/70 text-xs bg-blue-500/5 border border-blue-500/10 rounded-lg px-3 py-2">
+                      <p className="text-accent-fg/70 text-xs bg-accent/5 border border-accent/10 rounded-lg px-3 py-2">
                         ℹ️ Todas as cobranças e custos de tráfego serão gerados automaticamente.
                       </p>
                     )}
@@ -1333,7 +1334,7 @@ export default function App() {
                   <>
                     <input name="description" defaultValue={modal.data?.description || 'Cobrança'} placeholder="Descrição (ex: Serviço de Março)" className={inputClass} required />
                     <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
-                    <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} />
+                    <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} />
                     <select name="status" defaultValue={modal.data?.status || 'Pendente'} className={inputClass}>
                       <option value="Pendente">Pendente</option>
                       <option value="Atrasado">Atrasado</option>
@@ -1349,20 +1350,20 @@ export default function App() {
                     <input name="role" defaultValue={modal.data?.role} placeholder="Cargo" className={inputClass} required />
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-slate-400 text-xs mb-1 block">Meses de Contrato</label>
+                        <label className="text-muted text-xs mb-1 block">Meses de Contrato</label>
                         <input name="contract_months" type="number" min="1" defaultValue={modal.data?.contract_months || 1} className={inputClass} required />
                       </div>
                       <div>
-                        <label className="text-slate-400 text-xs mb-1 block">Salário Mensal (R$)</label>
+                        <label className="text-muted text-xs mb-1 block">Salário Mensal (R$)</label>
                         <input name="salary" type="number" step="0.01" defaultValue={modal.data?.salary || ''} placeholder="0,00" className={inputClass} required />
                       </div>
                     </div>
                     <div>
-                      <label className="text-slate-400 text-xs mb-1 block">Data 1º Pagamento</label>
-                      <input name="contract_start" type="date" defaultValue={modal.data?.contract_start?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} required />
+                      <label className="text-muted text-xs mb-1 block">Data 1º Pagamento</label>
+                      <input name="contract_start" type="date" defaultValue={modal.data?.contract_start?.split('T')[0] || today()} className={inputClass} required />
                     </div>
                     {!modal.data && (
-                      <p className="text-orange-400/70 text-xs bg-orange-500/5 border border-orange-500/10 rounded-lg px-3 py-2">
+                      <p className="text-warn/70 text-xs bg-warn/5 border border-warn/10 rounded-lg px-3 py-2">
                         ℹ️ Todos os pagamentos mensais serão gerados automaticamente.
                       </p>
                     )}
@@ -1374,7 +1375,7 @@ export default function App() {
                   <>
                     <input name="description" defaultValue={modal.data?.description || 'Salário'} placeholder="Descrição (ex: Salário Março/2026)" className={inputClass} required />
                     <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
-                    <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} />
+                    <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} />
                     <select name="status" defaultValue={modal.data?.status || 'Pendente'} className={inputClass}>
                       <option value="Pendente">Pendente</option>
                       <option value="Pago">Pago</option>
@@ -1387,7 +1388,7 @@ export default function App() {
                   <>
                     <input name="description" defaultValue={modal.data?.description} placeholder="Descrição da Transação" className={inputClass} required />
                     <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor" className={inputClass} required />
-                    <input name="date" type="date" defaultValue={modal.data?.date?.split('T')[0] || today()} className={inputClass} style={{ colorScheme: 'dark' }} required />
+                    <input name="date" type="date" defaultValue={modal.data?.date?.split('T')[0] || today()} className={inputClass} required />
                     <select name="type" defaultValue={modal.data?.type || 'saida'} className={inputClass}>
                       <option value="saida">Saída (Despesa)</option>
                       <option value="entrada">Entrada (Receita)</option>
@@ -1396,8 +1397,8 @@ export default function App() {
                 )}
 
                 <div className="pt-4 flex justify-end space-x-3">
-                  <button type="button" onClick={() => setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' })} className="px-4 py-2 text-slate-300 hover:text-white transition-colors">Cancelar</button>
-                  <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-colors">Salvar</button>
+                  <button type="button" onClick={() => setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' })} className="px-4 py-2 text-muted hover:text-fg transition-colors">Cancelar</button>
+                  <button type="submit" className="px-6 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium transition-colors">Salvar</button>
                 </div>
               </form>
             </motion.div>
