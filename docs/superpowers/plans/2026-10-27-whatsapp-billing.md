@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Manter o template de mensagem idêntico ao especificado em `Spec §2`, trocando apenas `semanal`, `quinzenal` ou `mensal` (em minúsculas) e preservando `[Mensagem Automática] – Up Valor` e `Jefferson K: 48.541.173/0001-43`.
+- Manter o template de mensagem idêntico ao especificado em `Spec §2`, trocando apenas `semanal`, `quinzenal` ou `mensal` (em minúsculas) e preservando `Up Valor` e `48.541.173/0001-43`.
 - Usar exclusivamente queries SQL parametrizadas com sintaxe simples `col = ?` nos `SET` e `WHERE` de `app/api/clients/route.js` para manter compatibilidade total com `lib/db.local.js` e `mysql2`.
 - Nunca hardcodar credenciais de banco em código ou scripts de migração (ler de `process.env` via `--env-file=.env.local`).
 - Nunca usar `alert()`, `confirm()`, `prompt()` ou `dangerouslySetInnerHTML` nos componentes criados/alterados.
@@ -192,7 +192,7 @@ Expected: Todos os testes passando, 0 erros de lint e build concluído com códi
 Subir servidor Next.js em `127.0.0.1:3000` e testar com `agent-browser`:
 1. Login no painel e abertura da aba **Clientes**.
 2. Cadastro de cliente com WhatsApp e verificação do número exibido no card.
-3. Clique em **Cobrar**, troca entre **Semanal**, **Quinzenal** e **Mensal** conferindo a mudança exata no texto da prévia e preservação da chave Pix `Jefferson K: 48.541.173/0001-43`.
+3. Clique em **Cobrar**, troca entre **Semanal**, **Quinzenal** e **Mensal** conferindo a mudança exata no texto da prévia e preservação da chave Pix `48.541.173/0001-43`.
 4. Edição inline do WhatsApp dentro do modal **Cobrar**, salvamento e verificação de persistência após reload + inspeção da URL `https://wa.me/55...` gerada no botão **Cobrar pelo WhatsApp**.
 
 ## Verification Plan

@@ -12,7 +12,7 @@ Permitir que o usuário do painel UpValor cobre rapidamente pelo WhatsApp os cli
 O texto enviado deve permanecer **exatamente igual** ao modelo oficial abaixo, alterando exclusivamente a palavra de frequência (`semanal`, `quinzenal` ou `mensal` em minúsculas):
 
 ```text
-[Mensagem Automática] – Up Valor
+Up Valor
 
 Olá! Passando pra lembrar que o dia do seu pagamento {semanal|quinzenal|mensal} com a agência Up Valor é hoje. 
 Essa é uma mensagem automática só pra te manter informado(a), beleza?
@@ -20,7 +20,7 @@ Essa é uma mensagem automática só pra te manter informado(a), beleza?
 Qualquer dúvida, estamos à disposição.
 Obrigada por seguir com a gente! 🚀
 💸 Chave Pix para pagamento:
-Jefferson K: 48.541.173/0001-43
+48.541.173/0001-43
 ```
 
 ## 3. Goals, Non-Goals & Anti-Goals

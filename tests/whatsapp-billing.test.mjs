@@ -11,7 +11,7 @@ import {
 
 const expectedTemplate = (freqWord) =>
   [
-    '[Mensagem Automática] – Up Valor',
+    'Up Valor',
     '',
     `Olá! Passando pra lembrar que o dia do seu pagamento ${freqWord} com a agência Up Valor é hoje. `,
     'Essa é uma mensagem automática só pra te manter informado(a), beleza?',
@@ -19,7 +19,7 @@ const expectedTemplate = (freqWord) =>
     'Qualquer dúvida, estamos à disposição.',
     'Obrigada por seguir com a gente! 🚀',
     '💸 Chave Pix para pagamento:',
-    'Jefferson K: 48.541.173/0001-43',
+    '48.541.173/0001-43',
   ].join('\n');
 
 test('BILLING_FREQUENCIES expõe as três frequências permitidas na ordem correta', () => {
