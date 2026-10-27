@@ -13,10 +13,12 @@ import {
   RefreshCw,
   XCircle,
   Search,
+  MessageCircle,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StatusBadge from '@/app/components/ui/StatusBadge.jsx';
 import { formatMoney, formatDate } from '@/lib/dashboard/format.js';
+import { formatWhatsappDisplay } from '@/lib/whatsapp/billing.js';
 
 function getInitials(name = '') {
   const parts = String(name).trim().split(/\s+/).filter(Boolean);
@@ -38,6 +40,7 @@ export default function ClientesSection({
   expandedClients = {},
   onToggleExpand,
   onOpenModal,
+  onOpenBillingModal,
   onRenewContract,
   onCancelContract,
   onDeleteClient,
@@ -230,7 +233,15 @@ export default function ClientesSection({
                     {formatMoney(c.monthly_fee)}/recorrência
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onOpenBillingModal?.(c)}
+                    className="flex items-center gap-1 text-xs font-semibold text-pos border border-pos/30 bg-pos/10 px-3 py-1.5 rounded-lg hover:bg-pos/20 transition-colors cursor-pointer"
+                  >
+                    <MessageCircle className="w-3 h-3" aria-hidden="true" />{' '}
+                    Cobrar
+                  </button>
                   <button
                     type="button"
                     onClick={() => onRenewContract(c)}
@@ -330,6 +341,9 @@ export default function ClientesSection({
                 .reduce((a, b) => a + parseFloat(b.amount), 0);
               const isActive = (client.contract_status || 'Ativo') === 'Ativo';
               const avatarTone = AVATAR_TONES[idx % AVATAR_TONES.length];
+              const whatsappDisplay = client.whatsapp
+                ? formatWhatsappDisplay(client.whatsapp)
+                : '';
 
               return (
                 <div
@@ -407,27 +421,49 @@ export default function ClientesSection({
                               </span>
                             </>
                           )}
+                          {Boolean(whatsappDisplay) && (
+                            <>
+                              {' '}
+                              · WhatsApp:{' '}
+                              <span className="text-fg font-medium">
+                                {whatsappDisplay}
+                              </span>
+                            </>
+                          )}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-2.5 sm:pt-0 border-t border-line/60 sm:border-t-0 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onOpenModal({
-                            isOpen: true,
-                            type: 'receivable',
-                            data: null,
-                            parentId: client.id,
-                            parentName: client.name,
-                          })
-                        }
-                        className="flex items-center gap-1 text-xs font-medium text-pos border border-pos/25 bg-pos/8 px-2.5 py-1.5 rounded-lg hover:bg-pos/15 transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" aria-hidden="true" />{' '}
-                        Cobrança
-                      </button>
+                    <div className="flex flex-wrap items-center justify-between sm:justify-end gap-1.5 pt-2.5 sm:pt-0 border-t border-line/60 sm:border-t-0 shrink-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => onOpenBillingModal?.(client)}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-pos border border-pos/30 bg-pos/10 px-3 py-1.5 rounded-lg hover:bg-pos/20 transition-colors cursor-pointer"
+                        >
+                          <MessageCircle
+                            className="w-3.5 h-3.5"
+                            aria-hidden="true"
+                          />{' '}
+                          Cobrar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onOpenModal({
+                              isOpen: true,
+                              type: 'receivable',
+                              data: null,
+                              parentId: client.id,
+                              parentName: client.name,
+                            })
+                          }
+                          className="flex items-center gap-1 text-xs font-medium text-accent-fg border border-accent/25 bg-accent/8 px-2.5 py-1.5 rounded-lg hover:bg-accent/15 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" aria-hidden="true" />{' '}
+                          Cobrança
+                        </button>
+                      </div>
                       <div className="flex items-center gap-1">
                         {client.contract_status === 'Vencido' && (
                           <button

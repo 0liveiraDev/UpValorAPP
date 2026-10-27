@@ -3,7 +3,14 @@ import { NextResponse } from 'next/server';
 import { cacheGet, cacheSet, cacheInvalidate } from '@/lib/cache';
 import { withErrorBoundary } from '@/lib/withErrorBoundary';
 
+import { sanitizeWhatsappInput } from '../../../lib/whatsapp/billing.js';
+
 const TTL = 3 * 60 * 1000;
+
+function sanitizeWhatsapp(raw) {
+  const cleaned = sanitizeWhatsappInput(raw);
+  return cleaned || null;
+}
 
 // Gera datas das parcelas com base na frequência e número de meses
 function gerarDatas(startDate, frequency, contractMonths) {
@@ -61,14 +68,17 @@ export const POST = withErrorBoundary('clients.POST', async (request) => {
   try {
     await conn.beginTransaction();
 
+    const whatsapp = sanitizeWhatsapp(data.whatsapp);
+
     // 1. Inserir o cliente com todos os campos de contrato
     const [result] = await conn.query(
       `INSERT INTO clients 
-        (user_id, name, contract_months, payment_frequency, monthly_fee, traffic_cost, traffic_frequency, contract_start, contract_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (user_id, name, whatsapp, contract_months, payment_frequency, monthly_fee, traffic_cost, traffic_frequency, contract_start, contract_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         data.userId,
         data.name,
+        whatsapp,
         data.contract_months || 1,
         data.payment_frequency || 'Mensal',
         data.monthly_fee || 0,
@@ -105,7 +115,7 @@ export const POST = withErrorBoundary('clients.POST', async (request) => {
     await conn.commit();
     cacheInvalidate(`clients:${data.userId}`);
     cacheInvalidate(`receivables:${data.userId}`);
-    return NextResponse.json({ id: clientId, ...data }, { status: 201 });
+    return NextResponse.json({ id: clientId, ...data, whatsapp }, { status: 201 });
 
   } catch (err) {
     await conn.rollback();
@@ -206,7 +216,34 @@ export const PUT = withErrorBoundary('clients.PUT', async (request) => {
     }
   }
 
+  // Atualizar apenas o WhatsApp do cliente
+  if (data.action === 'update_whatsapp') {
+    if (!data.id || !data.userId) {
+      return NextResponse.json({ error: 'id e userId são obrigatórios' }, { status: 400 });
+    }
+    const whatsapp = sanitizeWhatsapp(data.whatsapp);
+    await pool.query('UPDATE clients SET whatsapp = ? WHERE id = ? AND user_id = ?', [whatsapp, data.id, data.userId]);
+    cacheInvalidate(`clients:${data.userId}`);
+    return NextResponse.json({ success: true, whatsapp });
+  }
+
   // Edição normal do cliente
+  if (!data.id || !data.userId) return NextResponse.json({ error: 'id e userId são obrigatórios' }, { status: 400 });
+  if (data.whatsapp !== undefined) {
+    const whatsapp = sanitizeWhatsapp(data.whatsapp);
+    await pool.query(
+      `UPDATE clients SET name = ?, whatsapp = ?, contract_months = ?, payment_frequency = ?, monthly_fee = ?,
+        traffic_cost = ?, traffic_frequency = ?, contract_start = ?, contract_status = ?
+       WHERE id = ? AND user_id = ?`,
+      [
+        data.name, whatsapp, data.contract_months, data.payment_frequency, data.monthly_fee,
+        data.traffic_cost, data.traffic_frequency, data.contract_start, data.contract_status,
+        data.id, data.userId
+      ]
+    );
+    cacheInvalidate(`clients:${data.userId}`);
+    return NextResponse.json({ success: true });
+  }
   await pool.query(
     `UPDATE clients SET name = ?, contract_months = ?, payment_frequency = ?, monthly_fee = ?,
       traffic_cost = ?, traffic_frequency = ?, contract_start = ?, contract_status = ?

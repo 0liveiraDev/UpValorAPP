@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS clients (
     user_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
+    whatsapp VARCHAR(30) DEFAULT NULL,
     dueDate DATE,
     status ENUM('Pendente', 'Pago', 'Atrasado') DEFAULT 'Pendente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

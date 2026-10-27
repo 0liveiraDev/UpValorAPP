@@ -18,12 +18,14 @@ import {
   isCurrentPeriod,
 } from '../lib/dashboard/period.js';
 import { buildChartData } from '../lib/dashboard/chartData.js';
+import { formatWhatsappDisplay } from '../lib/whatsapp/billing.js';
 import AppHeader from './components/AppHeader.jsx';
 import DashboardPanel from './components/dashboard/DashboardPanel.jsx';
 import ClientesSection from './components/sections/ClientesSection.jsx';
 import FuncionariosSection from './components/sections/FuncionariosSection.jsx';
 import FluxoSection from './components/sections/FluxoSection.jsx';
 import AdminSection from './components/sections/AdminSection.jsx';
+import WhatsappBillingModal from './components/modals/WhatsappBillingModal.jsx';
 
 const today = () => new Date().toISOString().split('T')[0];
 
@@ -122,6 +124,7 @@ export default function App() {
 
   // UI
   const [modal, setModal] = useState({ isOpen: false, type: '', data: null, parentId: null, parentName: '' });
+  const [billingClientId, setBillingClientId] = useState(null);
   const [loginError, setLoginError] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [expandedClients, setExpandedClients] = useState({});
@@ -228,6 +231,46 @@ export default function App() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isAuthenticated) loadData();
   }, [isAuthenticated, loadData]);
+
+  const billingClient = useMemo(
+    () => clients.find((c) => c.id === billingClientId) || null,
+    [clients, billingClientId]
+  );
+
+  const billingPendingAmount = useMemo(() => {
+    if (!billingClientId) return 0;
+    return receivables
+      .filter((r) => r.client_id === billingClientId && r.status !== 'Pago')
+      .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+  }, [receivables, billingClientId]);
+
+  const handleSaveClientWhatsapp = useCallback(
+    async (clientId, whatsapp) => {
+      if (!currentUser?.id || !clientId) {
+        return { ok: false, error: 'Sessão inválida.' };
+      }
+      try {
+        const res = await fetch('/api/clients', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: clientId,
+            userId: currentUser.id,
+            action: 'update_whatsapp',
+            whatsapp: whatsapp || '',
+          }),
+        });
+        if (!res.ok) {
+          return { ok: false, error: 'Não foi possível salvar o WhatsApp.' };
+        }
+        await loadData();
+        return { ok: true };
+      } catch {
+        return { ok: false, error: 'Erro de conexão ao salvar o WhatsApp.' };
+      }
+    },
+    [currentUser, loadData]
+  );
 
   // --- AUTH ---
   const handleLogin = async (e) => {
@@ -422,6 +465,7 @@ export default function App() {
       if (modal.type === 'client') {
         const payload = {
           name: data.name,
+          whatsapp: data.whatsapp || '',
           userId: currentUser.id,
           contract_months: parseInt(data.contract_months) || 1,
           payment_frequency: data.payment_frequency || 'Mensal',
@@ -703,6 +747,7 @@ export default function App() {
                   expandedClients={expandedClients}
                   onToggleExpand={toggleClientExpand}
                   onOpenModal={setModal}
+                  onOpenBillingModal={(client) => setBillingClientId(client.id)}
                   onRenewContract={handleRenewContract}
                   onCancelContract={handleCancelContract}
                   onDeleteClient={handleDeleteClient}
@@ -793,6 +838,19 @@ export default function App() {
                   {modal.type === 'client' && (
                     <>
                       <input name="name" defaultValue={modal.data?.name} placeholder="Nome da Empresa / Cliente" className={inputClass} required />
+                      <div>
+                        <label className="text-muted text-xs mb-1 block">WhatsApp do Cliente <span className="text-subtle">(com DDD)</span></label>
+                        <input
+                          name="whatsapp"
+                          type="tel"
+                          defaultValue={formatWhatsappDisplay(modal.data?.whatsapp || '')}
+                          onChange={(e) => {
+                            e.target.value = formatWhatsappDisplay(e.target.value);
+                          }}
+                          placeholder="(85) 99999-9999"
+                          className={inputClass}
+                        />
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-muted text-xs mb-1 block">Meses de Contrato</label>
@@ -908,6 +966,14 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
+
+        <WhatsappBillingModal
+          isOpen={Boolean(billingClient)}
+          client={billingClient}
+          pendingAmount={billingPendingAmount}
+          onClose={() => setBillingClientId(null)}
+          onSaveWhatsapp={handleSaveClientWhatsapp}
+        />
       </div>
   );
 }
