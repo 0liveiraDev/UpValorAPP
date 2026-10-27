@@ -212,9 +212,9 @@ export default function FuncionariosSection({
                   key={emp.id}
                   className="rounded-2xl border border-line bg-surface-2/40 hover:bg-surface-2/70 transition-colors overflow-hidden"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 sm:p-4">
                     <div
-                      className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
+                      className="flex items-start sm:items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
                       onClick={() => onToggleExpand(emp.id)}
                     >
                       <button
@@ -248,9 +248,9 @@ export default function FuncionariosSection({
                         {getInitials(emp.name)}
                       </span>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-fg font-semibold text-sm sm:text-base truncate">
+                          <p className="text-fg font-semibold text-sm sm:text-base break-words">
                             {emp.name}
                           </p>
                           {emp.role && (
@@ -259,7 +259,7 @@ export default function FuncionariosSection({
                             </span>
                           )}
                         </div>
-                        <p className="text-subtle text-xs mt-0.5 uv-num">
+                        <p className="text-subtle text-xs mt-1 uv-num leading-relaxed">
                           {empPays.length} pagamento(s) · A pagar:{' '}
                           <span className="text-warn font-semibold">
                             {formatMoney(pendingSum)}
@@ -268,7 +268,7 @@ export default function FuncionariosSection({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-2 pt-2.5 sm:pt-0 border-t border-line/60 sm:border-t-0 shrink-0">
                       <button
                         type="button"
                         onClick={() =>
@@ -285,30 +285,32 @@ export default function FuncionariosSection({
                         <Plus className="w-3.5 h-3.5" aria-hidden="true" /> Novo
                         Pagamento
                       </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onOpenModal({
-                            isOpen: true,
-                            type: 'employee',
-                            data: emp,
-                            parentId: null,
-                            parentName: '',
-                          })
-                        }
-                        aria-label="Editar funcionário"
-                        className="text-muted hover:text-accent-fg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteEmployee(emp.id, emp.name)}
-                        aria-label="Excluir funcionário"
-                        className="text-muted hover:text-neg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onOpenModal({
+                              isOpen: true,
+                              type: 'employee',
+                              data: emp,
+                              parentId: null,
+                              parentName: '',
+                            })
+                          }
+                          aria-label="Editar funcionário"
+                          className="text-muted hover:text-accent-fg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteEmployee(emp.id, emp.name)}
+                          aria-label="Excluir funcionário"
+                          className="text-muted hover:text-neg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -337,8 +339,8 @@ export default function FuncionariosSection({
                                 className="bg-surface rounded-xl border border-line p-3"
                               >
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <p className="text-fg text-sm font-medium truncate">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-fg text-sm font-medium break-words">
                                       {p.description}
                                     </p>
                                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">

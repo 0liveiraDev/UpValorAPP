@@ -219,10 +219,10 @@ export default function ClientesSection({
             {expiredContracts.map((c) => (
               <div
                 key={c.id}
-                className="flex items-center justify-between bg-surface rounded-xl p-3 border border-line"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-surface rounded-xl p-3 border border-line"
               >
-                <div className="min-w-0">
-                  <p className="text-fg font-medium text-sm truncate">
+                <div className="min-w-0 flex-1">
+                  <p className="text-fg font-medium text-sm break-words sm:truncate">
                     {c.name}
                   </p>
                   <p className="text-subtle text-xs mt-0.5 uv-num">
@@ -336,9 +336,9 @@ export default function ClientesSection({
                   key={client.id}
                   className="rounded-2xl border border-line bg-surface-2/40 hover:bg-surface-2/70 transition-colors overflow-hidden"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3.5 sm:p-4">
                     <div
-                      className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
+                      className="flex items-start sm:items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
                       onClick={() => onToggleExpand(client.id)}
                     >
                       <button
@@ -372,9 +372,9 @@ export default function ClientesSection({
                         {getInitials(client.name)}
                       </span>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-fg font-semibold text-sm sm:text-base truncate">
+                          <p className="text-fg font-semibold text-sm sm:text-base break-words">
                             {client.name}
                           </p>
                           <span
@@ -392,7 +392,7 @@ export default function ClientesSection({
                             {client.contract_status || 'Ativo'}
                           </span>
                         </div>
-                        <p className="text-subtle text-xs mt-0.5 uv-num">
+                        <p className="text-subtle text-xs mt-1 uv-num leading-relaxed">
                           {client.payment_frequency || 'Mensal'} ·{' '}
                           {client.contract_months || 1} mês(es) · Gestão:{' '}
                           <span className="text-pos font-semibold">
@@ -411,7 +411,7 @@ export default function ClientesSection({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center justify-between sm:justify-end gap-1.5 pt-2.5 sm:pt-0 border-t border-line/60 sm:border-t-0 shrink-0">
                       <button
                         type="button"
                         onClick={() =>
@@ -428,52 +428,54 @@ export default function ClientesSection({
                         <Plus className="w-3.5 h-3.5" aria-hidden="true" />{' '}
                         Cobrança
                       </button>
-                      {client.contract_status === 'Vencido' && (
+                      <div className="flex items-center gap-1">
+                        {client.contract_status === 'Vencido' && (
+                          <button
+                            type="button"
+                            onClick={() => onRenewContract(client)}
+                            aria-label="Renovar contrato"
+                            title="Renovar contrato"
+                            className="text-muted hover:text-pos p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+                          >
+                            <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => onRenewContract(client)}
-                          aria-label="Renovar contrato"
-                          title="Renovar contrato"
-                          className="text-muted hover:text-pos p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+                          onClick={() =>
+                            onOpenModal({
+                              isOpen: true,
+                              type: 'client',
+                              data: client,
+                              parentId: null,
+                              parentName: '',
+                            })
+                          }
+                          aria-label="Editar cliente"
+                          title="Editar cliente"
+                          className="text-muted hover:text-accent-fg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
                         >
-                          <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                          <Edit2 className="w-4 h-4" aria-hidden="true" />
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onOpenModal({
-                            isOpen: true,
-                            type: 'client',
-                            data: client,
-                            parentId: null,
-                            parentName: '',
-                          })
-                        }
-                        aria-label="Editar cliente"
-                        title="Editar cliente"
-                        className="text-muted hover:text-accent-fg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
-                      >
-                        <Edit2 className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onCancelContract(client)}
-                        aria-label="Cancelar contrato"
-                        title="Cancelar contrato"
-                        className="text-muted hover:text-neg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
-                      >
-                        <XCircle className="w-4 h-4" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDeleteClient(client.id, client.name)}
-                        aria-label="Excluir cliente"
-                        title="Excluir cliente"
-                        className="text-muted hover:text-neg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" aria-hidden="true" />
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => onCancelContract(client)}
+                          aria-label="Cancelar contrato"
+                          title="Cancelar contrato"
+                          className="text-muted hover:text-neg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+                        >
+                          <XCircle className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDeleteClient(client.id, client.name)}
+                          aria-label="Excluir cliente"
+                          title="Excluir cliente"
+                          className="text-muted hover:text-neg p-1.5 rounded-lg hover:bg-surface transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -503,9 +505,9 @@ export default function ClientesSection({
                                 className="bg-surface rounded-xl border border-line p-3"
                               >
                                 <div className="flex items-start justify-between gap-2">
-                                  <div className="min-w-0">
+                                  <div className="min-w-0 flex-1">
                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="text-fg text-sm font-medium truncate">
+                                      <p className="text-fg text-sm font-medium break-words">
                                         {r.description}
                                       </p>
                                       {r.category === 'trafego' && (

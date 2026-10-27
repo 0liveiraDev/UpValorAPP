@@ -190,9 +190,9 @@ export default function FluxoSection({
               return (
                 <div
                   key={t.id}
-                  className="bg-surface-2/40 hover:bg-surface-2/70 transition-colors rounded-xl border border-line px-4 py-3 flex items-center justify-between gap-3"
+                  className="bg-surface-2/40 hover:bg-surface-2/70 transition-colors rounded-xl border border-line px-3.5 sm:px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3"
                 >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
                     <span
                       className={`w-9 h-9 rounded-full border inline-flex items-center justify-center shrink-0 ${
                         isEntrada
@@ -203,7 +203,7 @@ export default function FluxoSection({
                       <Icon className="w-4 h-4" aria-hidden="true" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-fg font-medium text-sm sm:text-base truncate">
+                      <p className="text-fg font-medium text-sm sm:text-base break-words sm:truncate">
                         {t.description}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
@@ -223,7 +223,7 @@ export default function FluxoSection({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t border-line/50 sm:border-t-0 shrink-0">
                     <span
                       className="uv-num font-bold text-sm sm:text-base"
                       style={{

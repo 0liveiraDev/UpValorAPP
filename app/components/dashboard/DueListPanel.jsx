@@ -99,18 +99,18 @@ export default function DueListPanel({
                   key={item.id}
                   className="py-3 sm:py-3.5 first:pt-1 last:pb-1"
                 >
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2.5 sm:gap-4">
                     {/* Esquerda: Avatar + Informações */}
-                    <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
                       <div
-                        className={`w-9 h-9 rounded-full border text-xs font-semibold inline-flex items-center justify-center shrink-0 mt-0.5 ${avatarTone}`}
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full border text-xs font-semibold inline-flex items-center justify-center shrink-0 mt-0.5 ${avatarTone}`}
                         aria-hidden="true"
                       >
                         {getInitials(item.name)}
                       </div>
-                      <div className="min-w-0 space-y-1">
+                      <div className="min-w-0 flex-1 space-y-1">
                         <div
-                          className="truncate font-medium text-fg text-sm sm:text-base"
+                          className="line-clamp-2 sm:truncate font-medium text-fg text-sm sm:text-base break-words"
                           title={item.name}
                         >
                           {item.name}

@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { LogOut } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import ThemeToggle from './theme/ThemeToggle.jsx';
 
 function getInitials(name = '') {
@@ -45,64 +45,37 @@ export default function AppHeader({
           >
             {navItems.map((item) => {
               const active = activeTab === item.name;
-              const Icon = item.icon;
               return (
-                <motion.button
-                  layout
+                <button
                   key={item.name}
                   type="button"
                   aria-current={active ? 'page' : undefined}
                   onClick={() => onTabChange?.(item.name)}
-                  transition={{
-                    layout: {
-                      type: 'spring',
-                      stiffness: 420,
-                      damping: 32,
-                    },
-                  }}
-                  className={`relative px-3 md:px-3.5 lg:px-4 h-9 rounded-full text-sm font-medium transition-colors duration-150 flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 cursor-pointer ${
-                    active ? 'text-white' : 'text-muted hover:text-fg'
+                  className={`relative px-4 lg:px-5 h-9 rounded-full text-sm transition-colors duration-150 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 cursor-pointer ${
+                    active
+                      ? 'text-fg font-semibold'
+                      : 'text-muted font-medium hover:text-fg'
                   }`}
                 >
                   {active && (
                     <motion.span
                       layoutId="lampNav"
-                      className="absolute inset-0 rounded-full bg-accent shadow-md shadow-accent/25"
+                      className="absolute inset-0 rounded-full bg-fg/[0.08]"
                       transition={{
                         type: 'spring',
-                        stiffness: 400,
+                        stiffness: 380,
                         damping: 30,
                       }}
                     >
                       <span
-                        className="absolute -top-1 left-1/2 -translate-x-1/2 w-7 h-1 rounded-t-full bg-accent-fg/90"
-                        style={{ boxShadow: '0 0 10px 1px var(--uv-accent)' }}
+                        className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-8 h-1 rounded-t-full bg-accent"
+                        style={{ boxShadow: '0 0 12px 2px var(--uv-accent)' }}
                       />
                     </motion.span>
                   )}
 
-                  <AnimatePresence initial={false} mode="popLayout">
-                    {active && Icon && (
-                      <motion.span
-                        key={`${item.name}-icon`}
-                        initial={{ width: 0, opacity: 0, scale: 0.6 }}
-                        animate={{ width: 'auto', opacity: 1, scale: 1 }}
-                        exit={{ width: 0, opacity: 0, scale: 0.6 }}
-                        transition={{
-                          duration: 0.2,
-                          ease: [0.22, 1, 0.36, 1],
-                        }}
-                        className="relative z-10 inline-flex items-center overflow-hidden"
-                      >
-                        <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-
-                  <motion.span layout="position" className="relative z-10">
-                    {item.label}
-                  </motion.span>
-                </motion.button>
+                  <span className="relative z-10">{item.label}</span>
+                </button>
               );
             })}
           </nav>
