@@ -566,7 +566,8 @@ export default function App() {
         <div className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-40 h-auto mb-2">
-              <Image unoptimized src="/logo.png" alt="UpValor" className="w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
+              <Image unoptimized src="/logo.png" alt="UpValor" className="uv-logo-light w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
+              <Image unoptimized src="/logo-dark.png" alt="UpValor" className="uv-logo-dark w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
             </div>
           </div>
           {loginError && <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">{loginError}</div>}

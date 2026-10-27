@@ -34,7 +34,14 @@ export default function AppHeader({
               alt="UpValor"
               width="112"
               height="32"
-              className="h-8 w-auto"
+              className="uv-logo-light h-8 w-auto"
+            />
+            <Image unoptimized
+              src="/logo-dark.png"
+              alt="UpValor"
+              width="112"
+              height="32"
+              className="uv-logo-dark h-8 w-auto"
             />
           </div>
 

@@ -41,6 +41,12 @@
   --uv-nav: rgba(255, 255, 255, 0.88);
 }
 
+/* Logo por tema: texto branco no escuro, texto escuro no claro */
+[data-theme="dark"] .uv-logo-light,
+[data-theme="light"] .uv-logo-dark {
+  display: none;
+}
+
 @theme inline {
   --color-bg: var(--uv-bg);
   --color-surface: var(--uv-surface);
