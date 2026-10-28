@@ -32,8 +32,8 @@ export async function POST(request) {
     try {
         const data = await request.json();
         const [result] = await pool.query(
-            'INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status) VALUES (?, ?, ?, ?, ?, ?)',
-            [data.clientId, data.userId, data.description || 'Cobrança', data.amount, data.dueDate, data.status || 'Pendente']
+            'INSERT INTO client_receivables (client_id, user_id, description, amount, due_date, status, category) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [data.clientId, data.userId, data.description || 'Cobrança', data.amount, data.dueDate, data.status || 'Pendente', data.category === 'trafego' ? 'trafego' : 'gestao']
         );
         return NextResponse.json({ id: result.insertId, ...data });
     } catch (error) {
@@ -46,8 +46,8 @@ export async function PUT(request) {
     try {
         const data = await request.json();
         await pool.query(
-            'UPDATE client_receivables SET description=?, amount=?, due_date=?, status=? WHERE id=? AND user_id=?',
-            [data.description, data.amount, data.dueDate, data.status, data.id, data.userId]
+            'UPDATE client_receivables SET description=?, amount=?, due_date=?, status=?, category=? WHERE id=? AND user_id=?',
+            [data.description, data.amount, data.dueDate, data.status, data.category === 'trafego' ? 'trafego' : 'gestao', data.id, data.userId]
         );
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -477,7 +477,7 @@ export default function App() {
         else await fetch('/api/clients', { method: 'POST', headers, body: JSON.stringify(payload) });
 
       } else if (modal.type === 'receivable') {
-        const payload = { clientId: modal.parentId, userId: currentUser.id, description: data.description, amount: parseFloat(data.amount), dueDate: data.dueDate, status: data.status || 'Pendente' };
+        const payload = { clientId: modal.parentId, userId: currentUser.id, description: data.description, amount: parseFloat(data.amount), dueDate: data.dueDate, status: data.status || 'Pendente', category: data.category || 'gestao' };
         const oldStatus = modal.data?.status;
         const newStatus = data.status;
 
@@ -893,6 +893,13 @@ export default function App() {
                   {/* Cobrança do cliente */}
                   {modal.type === 'receivable' && (
                     <>
+                      <div>
+                        <label className="text-muted text-xs mb-1 block">Tipo de Cobrança</label>
+                        <select name="category" defaultValue={modal.data?.category || 'gestao'} className={inputClass}>
+                          <option value="gestao">Gestão</option>
+                          <option value="trafego">Tráfego</option>
+                        </select>
+                      </div>
                       <input name="description" defaultValue={modal.data?.description || 'Cobrança'} placeholder="Descrição (ex: Serviço de Março)" className={inputClass} required />
                       <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
                       <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} />
