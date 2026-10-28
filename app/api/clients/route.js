@@ -4,6 +4,7 @@ import { cacheGet, cacheSet, cacheInvalidate } from '@/lib/cache';
 import { withErrorBoundary } from '@/lib/withErrorBoundary';
 
 import { sanitizeWhatsappInput } from '../../../lib/whatsapp/billing.js';
+import { normalizeAccountId } from '../../../lib/meta/graph.js';
 
 const TTL = 3 * 60 * 1000;
 
@@ -225,6 +226,21 @@ export const PUT = withErrorBoundary('clients.PUT', async (request) => {
     await pool.query('UPDATE clients SET whatsapp = ? WHERE id = ? AND user_id = ?', [whatsapp, data.id, data.userId]);
     cacheInvalidate(`clients:${data.userId}`);
     return NextResponse.json({ success: true, whatsapp });
+  }
+
+  // Vincular/desvincular conta de anúncios da Meta ao cliente
+  if (data.action === 'update_meta_account') {
+    if (!data.id || !data.userId) {
+      return NextResponse.json({ error: 'id e userId são obrigatórios' }, { status: 400 });
+    }
+    const raw = data.meta_ad_account_id;
+    const metaId = raw ? normalizeAccountId(raw) : null;
+    if (raw && !metaId) {
+      return NextResponse.json({ error: 'ID de conta de anúncio inválido' }, { status: 400 });
+    }
+    await pool.query('UPDATE clients SET meta_ad_account_id = ? WHERE id = ? AND user_id = ?', [metaId, data.id, data.userId]);
+    cacheInvalidate(`clients:${data.userId}`);
+    return NextResponse.json({ success: true, meta_ad_account_id: metaId });
   }
 
   // Edição normal do cliente

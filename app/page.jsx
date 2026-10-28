@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  LayoutDashboard, Users, Briefcase, Wallet, Settings
+  LayoutDashboard, Users, Briefcase, Wallet, Settings, Megaphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -25,6 +25,7 @@ import ClientesSection from './components/sections/ClientesSection.jsx';
 import FuncionariosSection from './components/sections/FuncionariosSection.jsx';
 import FluxoSection from './components/sections/FluxoSection.jsx';
 import AdminSection from './components/sections/AdminSection.jsx';
+import AnunciosSection from './components/sections/AnunciosSection.jsx';
 import WhatsappBillingModal from './components/modals/WhatsappBillingModal.jsx';
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -641,6 +642,7 @@ export default function App() {
     { name: "clientes", label: "Clientes", icon: Users },
     { name: "funcionarios", label: "Funcionários", icon: Briefcase },
     { name: "fluxo", label: "Fluxo", icon: Wallet },
+    { name: "anuncios", label: "Anúncios", icon: Megaphone },
     ...(currentUser?.role === 'admin' ? [{ name: "admin", label: "Admin", icon: Settings }] : [])
   ];
 
@@ -667,6 +669,17 @@ export default function App() {
 
   const toggleClientExpand = (id) => {
     setExpandedClients((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleLinkMetaAccount = async (client, accountId) => {
+    const res = await fetch('/api/clients', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_meta_account', id: client.id, userId: currentUser.id, meta_ad_account_id: accountId }),
+    });
+    const d = await res.json();
+    if (!res.ok) { alert(d.error || 'Erro ao vincular conta'); return; }
+    setClients((prev) => prev.map((c) => (c.id === client.id ? { ...c, meta_ad_account_id: d.meta_ad_account_id } : c)));
   };
 
   const toggleEmpExpand = (id) => {
@@ -791,6 +804,18 @@ export default function App() {
                   onOpenModal={setModal}
                   onDeleteTransaction={handleDeleteTransaction}
                 />
+              </motion.div>
+            )}
+
+            {activeTab === 'anuncios' && (
+              <motion.div
+                key="tab-anuncios"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <AnunciosSection clients={clients} onLinkAccount={handleLinkMetaAccount} userId={currentUser?.id} />
               </motion.div>
             )}
 
