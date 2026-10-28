@@ -220,19 +220,21 @@ function ClientMetricsView({
         </div>
       </div>
 
-      {/* Seletor de Períodos */}
-      <div className="flex rounded-full border border-line bg-surface-2/80 p-1 gap-1 overflow-x-auto custom-scrollbar">
-        {PRESETS.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => setPreset(p.value)}
-            className={`px-3 py-1 rounded-full text-xs sm:text-sm whitespace-nowrap cursor-pointer transition-colors font-medium ${
-              preset === p.value ? 'bg-accent text-white shadow-sm' : 'text-muted hover:text-fg'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+      {/* Seletor de Períodos Centralizado e Equilibrado */}
+      <div className="w-full flex items-center justify-center">
+        <div className="flex items-center justify-between w-full rounded-full border border-line bg-surface-2/80 p-1 gap-1 overflow-x-auto custom-scrollbar">
+          {PRESETS.map((p) => (
+            <button
+              key={p.value}
+              onClick={() => setPreset(p.value)}
+              className={`flex-1 text-center px-2 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs md:text-sm whitespace-nowrap cursor-pointer transition-colors font-medium ${
+                preset === p.value ? 'bg-accent text-white shadow-sm font-semibold' : 'text-muted hover:text-fg'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Grid Inteligente de Indicadores Reais */}
