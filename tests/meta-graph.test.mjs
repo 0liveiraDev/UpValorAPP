@@ -22,13 +22,19 @@ test('parseInsightsRow converte strings e calcula custo por resultado', () => {
       { action_type: 'lead', value: '10' },
       { action_type: 'onsite_conversion.lead_grouped', value: '10' },
       { action_type: 'onsite_conversion.messaging_conversation_started_7d', value: '5' },
+      { action_type: 'initiate_checkout', value: '3' },
+      { action_type: 'video_view', value: '1200' },
     ],
   });
   assert.equal(r.spend, 300.5);
   assert.equal(r.clicks, 250);
   assert.equal(r.leads, 10); // não duplica lead + lead_grouped
   assert.equal(r.messages, 5);
-  assert.equal(r.costPerResult, 300.5 / 15);
+  assert.equal(r.checkouts, 3);
+  assert.equal(r.videoPlays, 1200);
+  assert.equal(r.costPerResult, 300.5 / 18);
+  assert.equal(r.costPerMessage, 300.5 / 5);
+  assert.equal(r.costPerCheckout, 300.5 / 3);
 });
 
 test('parseInsightsRow sem dados retorna zeros', () => {

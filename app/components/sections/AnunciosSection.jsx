@@ -14,6 +14,10 @@ import {
   MousePointerClick,
   Eye,
   CheckCircle2,
+  MessageCircle,
+  ShoppingCart,
+  PlayCircle,
+  Users,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatMoney } from '@/lib/dashboard/format.js';
@@ -29,18 +33,76 @@ const PRESETS = [
 const fmtInt = (n) => Number(n || 0).toLocaleString('pt-BR');
 const fmtPct = (n) => `${Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%`;
 
-function KpiCard({ label, value, tone = 'text-fg', icon: Icon }) {
+function KpiCard({ label, value, subLabel, tone = 'text-fg', icon: Icon }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface-2/60 p-3.5 sm:p-4 min-w-0 flex flex-col justify-between">
+    <div className="rounded-2xl border border-line bg-surface-2/60 p-3 sm:p-4 min-w-0 flex flex-col justify-between">
       <div className="flex items-center justify-between gap-1">
-        <p className="text-xs text-muted truncate">{label}</p>
+        <p className="text-[11px] sm:text-xs text-muted truncate">{label}</p>
         {Icon && <Icon className="w-3.5 h-3.5 text-muted shrink-0 opacity-70" />}
       </div>
-      <p className={`uv-num text-lg sm:text-xl font-semibold mt-1.5 truncate ${tone}`}>
+      <p className={`uv-num text-lg sm:text-xl font-bold mt-1.5 truncate ${tone}`}>
         {value}
       </p>
+      {subLabel && (
+        <p className="text-[10px] sm:text-[11px] text-muted truncate mt-1">
+          {subLabel}
+        </p>
+      )}
     </div>
   );
+}
+
+function CampaignResultBadge({ campaign }) {
+  const { messages = 0, checkouts = 0, leads = 0, purchases = 0, videoPlays = 0, clicks = 0 } = campaign;
+  const items = [];
+  if (messages > 0) {
+    items.push(
+      <span key="msg" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-pos/15 text-pos border border-pos/25">
+        <MessageCircle className="w-3 h-3" />
+        {fmtInt(messages)} msgs
+      </span>
+    );
+  }
+  if (checkouts > 0) {
+    items.push(
+      <span key="chk" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-accent/15 text-accent-fg border border-accent/25">
+        <ShoppingCart className="w-3 h-3" />
+        {fmtInt(checkouts)} checkouts
+      </span>
+    );
+  }
+  if (leads > 0) {
+    items.push(
+      <span key="lead" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-traffic/15 text-traffic border border-traffic/25">
+        <Users className="w-3 h-3" />
+        {fmtInt(leads)} leads
+      </span>
+    );
+  }
+  if (purchases > 0) {
+    items.push(
+      <span key="pur" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-pos/20 text-pos border border-pos/30">
+        <CheckCircle2 className="w-3 h-3" />
+        {fmtInt(purchases)} compras
+      </span>
+    );
+  }
+  if (videoPlays > 0 && items.length === 0) {
+    items.push(
+      <span key="vid" className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-warn/15 text-warn border border-warn/25">
+        <PlayCircle className="w-3 h-3" />
+        {fmtInt(videoPlays)} plays
+      </span>
+    );
+  }
+  if (items.length === 0) {
+    items.push(
+      <span key="clk" className="text-muted text-xs uv-num">
+        {fmtInt(clicks)} cliques
+      </span>
+    );
+  }
+  return <div className="flex flex-wrap items-center justify-end gap-1.5">{items}</div>;
 }
 
 function AccountLinker({ client, accounts, onSave }) {
@@ -173,16 +235,71 @@ function ClientMetricsView({
         ))}
       </div>
 
-      {/* Grid de 8 KPIs */}
+      {/* Grid Inteligente de Indicadores Reais */}
       <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 transition-opacity ${loading ? 'opacity-50' : ''}`}>
-        <KpiCard label="Investimento" value={formatMoney(t?.spend || 0)} tone="text-traffic" icon={BarChart3} />
-        <KpiCard label="Resultados" value={fmtInt(results)} tone="text-pos" icon={TrendingUp} />
-        <KpiCard label="Custo por resultado" value={formatMoney(t?.costPerResult || 0)} tone="text-fg" />
-        <KpiCard label="Impressões" value={fmtInt(t?.impressions)} tone="text-fg" icon={Eye} />
-        <KpiCard label="Alcance" value={fmtInt(t?.reach)} tone="text-fg" icon={Eye} />
-        <KpiCard label="Cliques no link" value={fmtInt(t?.clicks)} tone="text-fg" icon={MousePointerClick} />
-        <KpiCard label="CTR" value={fmtPct(t?.ctr)} tone="text-fg" />
-        <KpiCard label="CPC Médio" value={formatMoney(t?.cpc || 0)} tone="text-fg" />
+        <KpiCard label="Investimento" value={formatMoney(t?.spend || 0)} subLabel="Total no período" tone="text-traffic" icon={BarChart3} />
+        
+        {/* Mensagens Geradas */}
+        <KpiCard
+          label="Mensagens Iniciadas"
+          value={fmtInt(t?.messages || 0)}
+          subLabel={t?.messages > 0 ? `Custo: ${formatMoney(t?.costPerMessage)}/msg` : 'WhatsApp / Direct'}
+          tone={t?.messages > 0 ? 'text-pos' : 'text-fg'}
+          icon={MessageCircle}
+        />
+
+        {/* Finalizações de Compra (Pixel) */}
+        <KpiCard
+          label="Finalizações de Compra"
+          value={fmtInt(t?.checkouts || 0)}
+          subLabel={t?.checkouts > 0 ? `Custo: ${formatMoney(t?.costPerCheckout)}/chk` : 'Checkout Pixel'}
+          tone={t?.checkouts > 0 ? 'text-accent-fg' : 'text-fg'}
+          icon={ShoppingCart}
+        />
+
+        {/* Cadastros / Leads */}
+        <KpiCard
+          label="Cadastros / Leads"
+          value={fmtInt(t?.leads || 0)}
+          subLabel={t?.leads > 0 ? `Custo: ${formatMoney(t?.costPerLead)}/lead` : 'Formulários / Pixel'}
+          tone={t?.leads > 0 ? 'text-traffic' : 'text-fg'}
+          icon={Users}
+        />
+
+        {/* Plays de Vídeo */}
+        <KpiCard
+          label="Plays de Vídeo"
+          value={fmtInt(t?.videoPlays || 0)}
+          subLabel="Reproduções"
+          tone="text-fg"
+          icon={PlayCircle}
+        />
+
+        {/* Alcance de Pessoas */}
+        <KpiCard
+          label="Alcance"
+          value={fmtInt(t?.reach || 0)}
+          subLabel="Pessoas únicas"
+          tone="text-fg"
+          icon={Eye}
+        />
+
+        {/* Cliques no Link */}
+        <KpiCard
+          label="Cliques no Link"
+          value={fmtInt(t?.clicks || 0)}
+          subLabel={`CTR: ${fmtPct(t?.ctr)}`}
+          tone="text-fg"
+          icon={MousePointerClick}
+        />
+
+        {/* CPC Médio */}
+        <KpiCard
+          label="CPC Médio"
+          value={formatMoney(t?.cpc || 0)}
+          subLabel="Custo por clique"
+          tone="text-fg"
+        />
       </div>
 
       {/* Card de Campanhas com Rolagem Interna (.custom-scrollbar) */}
@@ -197,7 +314,7 @@ function ClientMetricsView({
           <table className="w-full text-xs sm:text-sm">
             <thead className="text-muted text-[11px] sm:text-xs sticky top-0 bg-surface border-b border-line">
               <tr>
-                <th className="text-left px-3 sm:px-4 py-2 font-medium">Nome</th>
+                <th className="text-left px-3 sm:px-4 py-2 font-medium">Nome da Campanha</th>
                 <th className="text-right px-2.5 sm:px-3 py-2 font-medium">Investido</th>
                 <th className="text-right px-2.5 sm:px-3 py-2 font-medium">Cliques</th>
                 <th className="text-right px-3 sm:px-4 py-2 font-medium">Resultados</th>
@@ -206,7 +323,7 @@ function ClientMetricsView({
             <tbody className="divide-y divide-line">
               {(insights?.campaigns || []).map((c) => (
                 <tr key={c.id} className="hover:bg-surface-2/40 transition-colors">
-                  <td className="px-3 sm:px-4 py-2.5 text-fg font-medium max-w-[160px] sm:max-w-[260px] truncate" title={c.name}>
+                  <td className="px-3 sm:px-4 py-2.5 text-fg font-medium max-w-[150px] sm:max-w-[240px] truncate" title={c.name}>
                     {c.name}
                   </td>
                   <td className="px-2.5 sm:px-3 py-2.5 text-right uv-num font-medium text-traffic">
@@ -215,8 +332,8 @@ function ClientMetricsView({
                   <td className="px-2.5 sm:px-3 py-2.5 text-right uv-num text-muted">
                     {fmtInt(c.clicks)}
                   </td>
-                  <td className="px-3 sm:px-4 py-2.5 text-right uv-num font-semibold text-pos">
-                    {fmtInt(c.leads + c.messages + c.purchases)}
+                  <td className="px-3 sm:px-4 py-2.5 text-right">
+                    <CampaignResultBadge campaign={c} />
                   </td>
                 </tr>
               ))}
