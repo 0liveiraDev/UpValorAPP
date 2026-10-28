@@ -170,20 +170,9 @@ function ClientMetricsView({
   return (
     <div className="space-y-4">
       {/* Cabeçalho do Cliente Selecionado */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-line/70">
+      <div className="flex items-start justify-between gap-3 pb-3 border-b border-line/70">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-bold text-fg truncate">{client.name}</h2>
-            {isModal && onClose && (
-              <button
-                onClick={onClose}
-                className="lg:hidden p-1.5 rounded-full hover:bg-surface-2 text-muted hover:text-fg transition-colors ml-auto cursor-pointer"
-                aria-label="Fechar"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
+          <h2 className="text-lg sm:text-xl font-bold text-fg truncate">{client.name}</h2>
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-traffic/15 text-traffic border border-traffic/25">
               <Megaphone className="w-3 h-3" />
@@ -198,8 +187,8 @@ function ClientMetricsView({
           </div>
         </div>
 
-        {/* Botão de Atualizar */}
-        <div className="flex items-center gap-2">
+        {/* Ações no Canto Superior Direito: Atualizar + Fechar (X) */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onRefresh}
             disabled={loading}
@@ -211,8 +200,9 @@ function ClientMetricsView({
           {isModal && onClose && (
             <button
               onClick={onClose}
-              className="hidden sm:inline-flex lg:hidden p-1.5 rounded-full hover:bg-surface-2 text-muted hover:text-fg transition-colors cursor-pointer"
-              aria-label="Fechar"
+              className="p-1.5 rounded-full border border-line/70 bg-surface-2/70 hover:bg-surface-2 text-muted hover:text-fg transition-colors cursor-pointer"
+              aria-label="Fechar pop-up"
+              title="Fechar"
             >
               <X className="w-5 h-5" />
             </button>
