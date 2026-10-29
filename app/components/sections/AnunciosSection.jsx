@@ -201,7 +201,7 @@ function ClientMetricsView({
           {isModal && onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full border border-line/70 bg-surface-2/70 hover:bg-surface-2 text-muted hover:text-fg transition-colors cursor-pointer"
+              className="hidden sm:flex p-1.5 rounded-full border border-line/70 bg-surface-2/70 hover:bg-surface-2 text-muted hover:text-fg transition-colors cursor-pointer"
               aria-label="Fechar pop-up"
               title="Fechar"
             >
@@ -682,13 +682,26 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
               transition={{ type: 'spring', damping: 28, stiffness: 320, mass: 0.8 }}
               className="relative bg-surface border-t sm:border border-line-strong rounded-t-[28px] sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden z-10"
             >
-              {/* Barra tátil de arraste para mobile (Gesto de arrastar para baixo para fechar) */}
+              {/* Barra tátil superior com alça de arraste centralizada e botão de fechar rápido */}
               <div
                 onPointerDown={(e) => dragControls.start(e)}
-                className="w-full pt-3 pb-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing sm:hidden shrink-0 select-none touch-none group"
+                className="w-full pt-3 pb-2.5 px-4 flex items-center justify-between cursor-grab active:cursor-grabbing sm:hidden shrink-0 select-none touch-none border-b border-line/40 bg-surface"
                 aria-label="Puxar para fechar"
               >
-                <div className="w-14 h-1.5 bg-line-strong rounded-full group-hover:bg-muted group-active:bg-accent transition-colors" />
+                <div className="w-8" />
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-1.5 bg-line-strong rounded-full transition-colors active:bg-accent" />
+                  <span className="text-[10px] text-muted/60 mt-1 font-medium tracking-wide">deslize para fechar</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileModalOpen(false)}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="w-8 h-8 rounded-full border border-line bg-surface-2/80 hover:bg-surface-2 text-muted hover:text-fg flex items-center justify-center cursor-pointer transition-colors"
+                  aria-label="Fechar pop-up"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
 
               <div className="p-4 sm:p-5 pt-1 sm:pt-4 overflow-y-auto custom-scrollbar flex-1 overscroll-contain">

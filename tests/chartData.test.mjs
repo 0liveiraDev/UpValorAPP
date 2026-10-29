@@ -115,3 +115,27 @@ test('data YYYY-MM-01 em UTC-3 cai no mês correto nos gráficos sem regredir pa
   assert.equal(data[3].key, '2026-08');
   assert.equal(data[3].gestao, 500);
 });
+
+test('buildChartData atribui corretamente cobrança com category trafego sem padrão na descrição', () => {
+  const receivables = [
+    {
+      status: 'Pago',
+      due_date: '2026-08-10',
+      amount: '450',
+      category: 'trafego',
+      description: 'Cobrança - Tráfego',
+    },
+    {
+      status: 'Pago',
+      due_date: '2026-08-10',
+      amount: '1200',
+      category: 'gestao',
+      description: 'Cobrança - Gestão',
+    },
+  ];
+
+  const data = buildChartData(receivables, [], { months: 6, today });
+  assert.equal(data[3].key, '2026-08');
+  assert.equal(data[3].gestao, 1200);
+  assert.equal(data[3].trafego, 450);
+});

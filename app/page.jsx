@@ -478,12 +478,21 @@ export default function App() {
         else await fetch('/api/clients', { method: 'POST', headers, body: JSON.stringify(payload) });
 
       } else if (modal.type === 'receivable') {
-        const payload = { clientId: modal.parentId, userId: currentUser.id, description: data.description, amount: parseFloat(data.amount), dueDate: data.dueDate, status: data.status || 'Pendente', category: data.category || 'gestao' };
         const oldStatus = modal.data?.status;
         const newStatus = data.status;
 
         if (isEdit) {
-          await fetch('/api/clients/receivables', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
+          const payload = {
+            id: modal.data.id,
+            clientId: modal.parentId,
+            userId: currentUser.id,
+            description: data.description,
+            amount: parseFloat(data.amount) || 0,
+            dueDate: data.dueDate,
+            status: data.status || 'Pendente',
+            category: data.category === 'trafego' ? 'trafego' : 'gestao',
+          };
+          await fetch('/api/clients/receivables', { method: 'PUT', headers, body: JSON.stringify(payload) });
           // Mudou de não-Pago para Pago → criar transação
           if (oldStatus !== 'Pago' && newStatus === 'Pago') {
             await createTransaction(`Recebimento - ${modal.parentName}`, data.amount, 'entrada');
@@ -493,10 +502,58 @@ export default function App() {
             await deleteLinkedTransaction(`Recebimento - ${modal.parentName}`);
           }
         } else {
-          await fetch('/api/clients/receivables', { method: 'POST', headers, body: JSON.stringify(payload) });
-          // Criou já como Pago → criar transação
-          if (newStatus === 'Pago') {
-            await createTransaction(`Recebimento - ${modal.parentName}`, data.amount, 'entrada');
+          const gestaoVal = parseFloat(data.gestao_amount) || 0;
+          const trafegoVal = parseFloat(data.trafego_amount) || 0;
+
+          if (gestaoVal <= 0 && trafegoVal <= 0) {
+            alert('Por favor, informe ao menos um valor (Gestão ou Tráfego).');
+            return;
+          }
+
+          const baseDesc = data.description?.trim() || 'Cobrança';
+          const dueDate = data.dueDate || today();
+          const status = data.status || 'Pendente';
+
+          // Se preencheu gestão
+          if (gestaoVal > 0) {
+            const descGestao = trafegoVal > 0 ? `${baseDesc} - Gestão` : baseDesc;
+            await fetch('/api/clients/receivables', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                clientId: modal.parentId,
+                userId: currentUser.id,
+                description: descGestao,
+                amount: gestaoVal,
+                dueDate,
+                status,
+                category: 'gestao',
+              }),
+            });
+            if (status === 'Pago') {
+              await createTransaction(`Recebimento - ${modal.parentName} (Gestão)`, gestaoVal, 'entrada');
+            }
+          }
+
+          // Se preencheu tráfego
+          if (trafegoVal > 0) {
+            const descTrafego = gestaoVal > 0 ? `${baseDesc} - Tráfego` : (baseDesc === 'Cobrança' ? 'Tráfego' : `${baseDesc} - Tráfego`);
+            await fetch('/api/clients/receivables', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                clientId: modal.parentId,
+                userId: currentUser.id,
+                description: descTrafego,
+                amount: trafegoVal,
+                dueDate,
+                status,
+                category: 'trafego',
+              }),
+            });
+            if (status === 'Pago') {
+              await createTransaction(`Recebimento - ${modal.parentName} (Tráfego)`, trafegoVal, 'entrada');
+            }
           }
         }
 
@@ -555,7 +612,7 @@ export default function App() {
       return isDateInScope(r.due_date || r.dueDate, period, now);
     });
     
-    // Discriminar gestão vs tráfego via parsing da descrição
+    // Discriminar gestão vs tráfego via parsing da descrição ou category
     let gestaoAReceber = 0, trafegoAReceber = 0;
     let gestaoRecebido = 0, trafegoRecebido = 0;
     scopeRecs.forEach(r => {
@@ -564,8 +621,11 @@ export default function App() {
       if (parsed.gestao > 0 || parsed.trafego > 0) {
         if (r.status !== 'Pago') { gestaoAReceber += parsed.gestao; trafegoAReceber += parsed.trafego; }
         else { gestaoRecebido += parsed.gestao; trafegoRecebido += parsed.trafego; }
+      } else if (r.category === 'trafego') {
+        if (r.status !== 'Pago') trafegoAReceber += amt;
+        else trafegoRecebido += amt;
       } else {
-        // Cobranças antigas sem parsing (antes da unificação)
+        // Cobranças antigas sem parsing e padrão de gestão
         if (r.status !== 'Pago') gestaoAReceber += amt;
         else gestaoRecebido += amt;
       }
@@ -915,8 +975,8 @@ export default function App() {
                     </>
                   )}
 
-                  {/* Cobrança do cliente */}
-                  {modal.type === 'receivable' && (
+                  {/* Cobrança do cliente - Edição */}
+                  {modal.type === 'receivable' && modal.data && (
                     <>
                       <div>
                         <label className="text-muted text-xs mb-1 block">Tipo de Cobrança</label>
@@ -925,14 +985,67 @@ export default function App() {
                           <option value="trafego">Tráfego</option>
                         </select>
                       </div>
-                      <input name="description" defaultValue={modal.data?.description || 'Cobrança'} placeholder="Descrição (ex: Serviço de Março)" className={inputClass} required />
-                      <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
-                      <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} />
-                      <select name="status" defaultValue={modal.data?.status || 'Pendente'} className={inputClass}>
-                        <option value="Pendente">Pendente</option>
-                        <option value="Atrasado">Atrasado</option>
-                        <option value="Pago">Pago</option>
-                      </select>
+                      <div>
+                        <label className="text-muted text-xs mb-1 block">Descrição</label>
+                        <input name="description" defaultValue={modal.data?.description || 'Cobrança'} placeholder="Descrição (ex: Serviço de Março)" className={inputClass} required />
+                      </div>
+                      <div>
+                        <label className="text-muted text-xs mb-1 block">Valor (R$)</label>
+                        <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-muted text-xs mb-1 block">Vencimento</label>
+                          <input name="dueDate" type="date" defaultValue={modal.data?.due_date?.split('T')[0] || today()} className={inputClass} />
+                        </div>
+                        <div>
+                          <label className="text-muted text-xs mb-1 block">Status</label>
+                          <select name="status" defaultValue={modal.data?.status || 'Pendente'} className={inputClass}>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Atrasado">Atrasado</option>
+                            <option value="Pago">Pago</option>
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Cobrança do cliente - Nova Cobrança */}
+                  {modal.type === 'receivable' && !modal.data && (
+                    <>
+                      <div>
+                        <label className="text-muted text-xs mb-1 block">Descrição</label>
+                        <input name="description" defaultValue="Cobrança" placeholder="Descrição (ex: Mensalidade de Março)" className={inputClass} required />
+                      </div>
+
+                      <div className="space-y-3 p-3.5 rounded-xl bg-surface-2/40 border border-line-strong">
+                        <div>
+                          <label className="text-fg text-xs font-semibold mb-1 block">Valor da Gestão (R$)</label>
+                          <input name="gestao_amount" type="number" step="0.01" placeholder="0,00" className={inputClass} />
+                        </div>
+                        <div>
+                          <label className="text-fg text-xs font-semibold mb-1 block">Valor do Tráfego (R$)</label>
+                          <input name="trafego_amount" type="number" step="0.01" placeholder="0,00" className={inputClass} />
+                        </div>
+                        <p className="text-subtle text-[11px] leading-relaxed">
+                          Preencha Gestão, Tráfego ou ambos para cadastrar os valores na mesma tela sem precisar criar duas vezes.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-muted text-xs mb-1 block">Vencimento</label>
+                          <input name="dueDate" type="date" defaultValue={today()} className={inputClass} />
+                        </div>
+                        <div>
+                          <label className="text-muted text-xs mb-1 block">Status</label>
+                          <select name="status" defaultValue="Pendente" className={inputClass}>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Atrasado">Atrasado</option>
+                            <option value="Pago">Pago</option>
+                          </select>
+                        </div>
+                      </div>
                     </>
                   )}
 
