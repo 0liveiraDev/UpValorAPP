@@ -18,8 +18,10 @@ import {
   ShoppingCart,
   PlayCircle,
   Users,
+  Key,
+  ShieldAlert,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { formatMoney } from '@/lib/dashboard/format.js';
 
 const PRESETS = [
@@ -165,7 +167,6 @@ function ClientMetricsView({
   isModal = false,
 }) {
   const t = insights?.totals;
-  const results = t ? t.leads + t.messages + t.purchases : 0;
 
   return (
     <div className="space-y-4">
@@ -362,11 +363,20 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
   const [error, setError] = useState('');
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
+  // Modal de gerenciamento do token Meta
+  const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
+  const [tokenInput, setTokenInput] = useState('');
+  const [savingToken, setSavingToken] = useState(false);
+  const [tokenFeedback, setTokenFeedback] = useState({ type: '', text: '' });
+
+  // Hook de controle tátil de arraste para fechar o pop-up no mobile
+  const dragControls = useDragControls();
+
   const list = useMemo(() => clients.filter((c) => c.contract_status !== 'Cancelado'), [clients]);
   const selected = list.find((c) => c.id === selectedId) || null;
   const accountName = (id) => accounts.find((a) => a.id === id)?.name || id;
 
-  useEffect(() => {
+  const loadAccounts = useCallback(() => {
     const userParam = userId ? `&userId=${encodeURIComponent(userId)}` : '';
     fetch(`/api/meta?action=status${userParam}`)
       .then((r) => r.json())
@@ -375,12 +385,23 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
         if (s.configured) {
           fetch(`/api/meta?action=accounts${userParam}`)
             .then((r) => r.json())
-            .then((d) => (Array.isArray(d) ? setAccounts(d) : setError(d.error || 'Falha ao listar contas')))
+            .then((d) => {
+              if (Array.isArray(d)) {
+                setAccounts(d);
+                setError('');
+              } else {
+                setError(d.error || 'Falha ao listar contas');
+              }
+            })
             .catch(() => setError('Falha ao listar contas'));
         }
       })
       .catch(() => setConfigured(false));
   }, [userId]);
+
+  useEffect(() => {
+    loadAccounts();
+  }, [loadAccounts]);
 
   const loadInsights = useCallback(async () => {
     if (!selected?.meta_ad_account_id || !configured) {
@@ -423,6 +444,33 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
     }
   };
 
+  const handleSaveToken = async (e) => {
+    e?.preventDefault();
+    if (!tokenInput.trim() || !userId) return;
+    setSavingToken(true);
+    setTokenFeedback({ type: '', text: '' });
+    try {
+      const res = await fetch('/api/meta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, token: tokenInput.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Erro ao salvar token');
+      setTokenFeedback({ type: 'success', text: 'Token da Meta salvo com sucesso! Atualizando contas…' });
+      setTokenInput('');
+      setTimeout(() => {
+        setIsTokenModalOpen(false);
+        setTokenFeedback({ type: '', text: '' });
+        loadAccounts();
+      }, 1200);
+    } catch (err) {
+      setTokenFeedback({ type: 'error', text: err.message || 'Erro ao salvar token' });
+    } finally {
+      setSavingToken(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       {/* Cabeçalho da Seção */}
@@ -433,23 +481,57 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
             Métricas de tráfego pago da Meta Ads por cliente
           </p>
         </div>
+        <button
+          onClick={() => setIsTokenModalOpen(true)}
+          className="h-8 px-3 rounded-full border border-line bg-surface-2 hover:bg-surface-2/80 text-xs font-medium text-fg inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+          title="Configurar ou trocar Token da Meta"
+        >
+          <Key className="w-3.5 h-3.5 text-accent" />
+          <span>Configurar Token</span>
+        </button>
       </div>
 
       {configured === false && (
-        <div className="rounded-2xl border border-warn/30 bg-warn/10 p-4 flex gap-3 text-sm">
-          <AlertTriangle className="w-5 h-5 text-warn shrink-0" />
-          <div className="text-fg">
-            <p className="font-medium">Conexão com a Meta não configurada</p>
-            <p className="text-muted mt-1 text-xs sm:text-sm">
-              Nenhuma conta da Meta conectada para este usuário.
-            </p>
+        <div className="rounded-2xl border border-warn/30 bg-warn/10 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-warn shrink-0 mt-0.5" />
+            <div className="text-fg">
+              <p className="font-medium">Conexão com a Meta não configurada</p>
+              <p className="text-muted mt-1 text-xs sm:text-sm">
+                Nenhuma conta da Meta conectada para este usuário.
+              </p>
+            </div>
           </div>
+          <button
+            onClick={() => setIsTokenModalOpen(true)}
+            className="px-3.5 py-1.5 rounded-xl bg-accent text-white text-xs font-medium cursor-pointer shrink-0 transition-opacity hover:opacity-90"
+          >
+            Conectar Token
+          </button>
         </div>
       )}
 
       {error && (
-        <div className="rounded-2xl border border-neg/30 bg-neg/10 p-3.5 text-xs sm:text-sm text-neg break-words">
-          {error}
+        <div className="rounded-2xl border border-neg/30 bg-neg/10 p-4 text-xs sm:text-sm text-neg break-words flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-2.5">
+            <ShieldAlert className="w-5 h-5 shrink-0 text-neg mt-0.5" />
+            <div>
+              <p className="font-semibold">
+                {error.includes('API access blocked') ? 'Acesso à API bloqueado pela Meta' : 'Atenção na conexão com a Meta'}
+              </p>
+              <p className="text-neg/90 text-xs mt-1 max-w-2xl leading-relaxed">
+                {error.includes('API access blocked')
+                  ? 'A Meta bloqueou as chamadas deste token por verificação de segurança upstream (exige checagem em "Ações necessárias" no developers.facebook.com ou um novo token gerado no Gerenciador de Negócios / Graph API Explorer).'
+                  : error}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsTokenModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl bg-neg/20 hover:bg-neg/30 text-fg text-xs font-semibold shrink-0 transition-colors cursor-pointer border border-neg/30"
+          >
+            Trocar / Inserir Novo Token
+          </button>
         </div>
       )}
 
@@ -567,7 +649,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
         </div>
       </div>
 
-      {/* POP-UP / BOTTOM-SHEET MODAL PARA MOBILE (Abre quando clica no cliente no celular) */}
+      {/* POP-UP / BOTTOM-SHEET MODAL PARA MOBILE COM ANIMAÇÃO SUBINDO E CONTROLE TÁTIL (SWIPE DOWN) */}
       <AnimatePresence>
         {isMobileModalOpen && selected && selected.meta_ad_account_id && (
           <div className="lg:hidden fixed inset-0 z-[120] flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -576,22 +658,40 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
               onClick={() => setIsMobileModalOpen(false)}
             />
 
-            {/* Container do Pop-up em formato Bottom-Sheet no celular */}
+            {/* Container do Pop-up Bottom-Sheet com física de mola e gesto tátil de arraste */}
             <motion.div
-              initial={{ opacity: 0, y: 60 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 60 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="relative bg-surface border border-line-strong rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden z-10"
+              drag="y"
+              dragControls={dragControls}
+              dragListener={false}
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0.05, bottom: 0.65 }}
+              onDragEnd={(e, info) => {
+                // Ao puxar a barrinha mais de 80px para baixo ou soltar com velocidade: fecha o pop-up
+                if (info.offset.y > 80 || info.velocity.y > 300) {
+                  setIsMobileModalOpen(false);
+                }
+              }}
+              initial={{ y: '100%', opacity: 0.6 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 320, mass: 0.8 }}
+              className="relative bg-surface border-t sm:border border-line-strong rounded-t-[28px] sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden z-10"
             >
-              {/* Barra de arraste visual para mobile */}
-              <div className="w-12 h-1.5 bg-line rounded-full mx-auto mt-3 mb-1 sm:hidden shrink-0" />
+              {/* Barra tátil de arraste para mobile (Gesto de arrastar para baixo para fechar) */}
+              <div
+                onPointerDown={(e) => dragControls.start(e)}
+                className="w-full pt-3 pb-2 flex flex-col items-center justify-center cursor-grab active:cursor-grabbing sm:hidden shrink-0 select-none touch-none group"
+                aria-label="Puxar para fechar"
+              >
+                <div className="w-14 h-1.5 bg-line-strong rounded-full group-hover:bg-muted group-active:bg-accent transition-colors" />
+              </div>
 
-              <div className="p-4 sm:p-5 overflow-y-auto custom-scrollbar flex-1">
+              <div className="p-4 sm:p-5 pt-1 sm:pt-4 overflow-y-auto custom-scrollbar flex-1 overscroll-contain">
                 <ClientMetricsView
                   client={selected}
                   preset={preset}
@@ -604,6 +704,89 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
                   isModal={true}
                 />
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL PARA CONFIGURAR / TROCAR TOKEN DA META */}
+      <AnimatePresence>
+        {isTokenModalOpen && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              onClick={() => setIsTokenModalOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative bg-surface border border-line-strong rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-6 z-10"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-line">
+                <div className="flex items-center gap-2">
+                  <Key className="w-5 h-5 text-accent" />
+                  <h3 className="font-bold text-lg text-fg">Token da Meta Ads</h3>
+                </div>
+                <button
+                  onClick={() => setIsTokenModalOpen(false)}
+                  className="p-1 rounded-full hover:bg-surface-2 text-muted hover:text-fg transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveToken} className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-muted mb-1.5">
+                    Cole o novo Token de Acesso da Meta
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={tokenInput}
+                    onChange={(e) => setTokenInput(e.target.value)}
+                    placeholder="EAAY..."
+                    required
+                    className="w-full rounded-xl border border-line bg-surface-2 p-3 text-xs sm:text-sm text-fg font-mono focus:outline-none focus:ring-2 focus:ring-accent/60 resize-none break-all"
+                  />
+                  <p className="text-[11px] text-muted mt-1 leading-relaxed">
+                    Você pode gerar este token em <b>Gerenciador de Negócios ➔ Usuários do sistema</b> ou no <b>Graph API Explorer</b> com a permissão <code>ads_read</code>.
+                  </p>
+                </div>
+
+                {tokenFeedback.text && (
+                  <div
+                    className={`p-3 rounded-xl text-xs ${
+                      tokenFeedback.type === 'success'
+                        ? 'bg-pos/15 text-pos border border-pos/30'
+                        : 'bg-neg/15 text-neg border border-neg/30'
+                    }`}
+                  >
+                    {tokenFeedback.text}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
+                  <button
+                    type="button"
+                    onClick={() => setIsTokenModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-line bg-surface-2 hover:bg-surface-2/80 text-xs sm:text-sm font-medium text-fg cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingToken || !tokenInput.trim()}
+                    className="px-4 py-2 rounded-xl bg-accent text-white text-xs sm:text-sm font-medium disabled:opacity-50 cursor-pointer inline-flex items-center gap-1.5 hover:opacity-90"
+                  >
+                    {savingToken && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
+                    <span>{savingToken ? 'Salvando…' : 'Salvar e Conectar'}</span>
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
