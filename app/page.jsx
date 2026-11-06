@@ -8,6 +8,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   parseDescValues,
   parseInstallment,
+  formatMoney,
+  buildReceivableDescription,
+  getReceivableTitle,
+  splitReceivableAmounts,
 } from '../lib/dashboard/format.js';
 import {
   createPeriod,
@@ -125,6 +129,25 @@ export default function App() {
 
   // UI
   const [modal, setModal] = useState({ isOpen: false, type: '', data: null, parentId: null, parentName: '' });
+  const [receivableGestao, setReceivableGestao] = useState('');
+  const [receivableTrafego, setReceivableTrafego] = useState('');
+
+  const handleOpenModal = useCallback((modalState) => {
+    // Ao editar uma cobrança, pré-preenche a parte de gestão e a de tráfego.
+    const split = modalState?.type === 'receivable' && modalState.data
+      ? splitReceivableAmounts(modalState.data)
+      : null;
+    setReceivableGestao(split?.gestao ? String(split.gestao) : '');
+    setReceivableTrafego(split?.trafego ? String(split.trafego) : '');
+    setModal(modalState);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setReceivableGestao('');
+    setReceivableTrafego('');
+    setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' });
+  }, []);
+
   const [billingClientId, setBillingClientId] = useState(null);
   const [loginError, setLoginError] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -479,81 +502,41 @@ export default function App() {
 
       } else if (modal.type === 'receivable') {
         const oldStatus = modal.data?.status;
-        const newStatus = data.status;
+        const newStatus = data.status || 'Pendente';
+        const gestaoVal = Math.round((parseFloat(data.gestao_amount) || 0) * 100) / 100;
+        const trafegoVal = Math.round((parseFloat(data.trafego_amount) || 0) * 100) / 100;
+        const totalAmount = Math.round((gestaoVal + trafegoVal) * 100) / 100;
+
+        if (totalAmount <= 0) {
+          alert('Por favor, informe ao menos um valor (Gestão ou Tráfego).');
+          return;
+        }
+
+        // UMA ÚNICA cobrança com o total; a descrição discrimina gestão e tráfego.
+        const payload = {
+          clientId: modal.parentId,
+          userId: currentUser.id,
+          description: buildReceivableDescription(data.description, gestaoVal, trafegoVal),
+          amount: totalAmount,
+          dueDate: data.dueDate || today(),
+          status: newStatus,
+          category: gestaoVal > 0 ? 'gestao' : 'trafego',
+        };
 
         if (isEdit) {
-          const payload = {
-            id: modal.data.id,
-            clientId: modal.parentId,
-            userId: currentUser.id,
-            description: data.description,
-            amount: parseFloat(data.amount) || 0,
-            dueDate: data.dueDate,
-            status: data.status || 'Pendente',
-            category: data.category === 'trafego' ? 'trafego' : 'gestao',
-          };
-          await fetch('/api/clients/receivables', { method: 'PUT', headers, body: JSON.stringify(payload) });
+          await fetch('/api/clients/receivables', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
           // Mudou de não-Pago para Pago → criar transação
           if (oldStatus !== 'Pago' && newStatus === 'Pago') {
-            await createTransaction(`Recebimento - ${modal.parentName}`, data.amount, 'entrada');
+            await createTransaction(`Recebimento - ${modal.parentName}`, totalAmount, 'entrada');
           }
           // Mudou de Pago para não-Pago → reverter transação
           if (oldStatus === 'Pago' && newStatus !== 'Pago') {
             await deleteLinkedTransaction(`Recebimento - ${modal.parentName}`);
           }
         } else {
-          const gestaoVal = parseFloat(data.gestao_amount) || 0;
-          const trafegoVal = parseFloat(data.trafego_amount) || 0;
-
-          if (gestaoVal <= 0 && trafegoVal <= 0) {
-            alert('Por favor, informe ao menos um valor (Gestão ou Tráfego).');
-            return;
-          }
-
-          const baseDesc = data.description?.trim() || 'Cobrança';
-          const dueDate = data.dueDate || today();
-          const status = data.status || 'Pendente';
-
-          // Se preencheu gestão
-          if (gestaoVal > 0) {
-            const descGestao = trafegoVal > 0 ? `${baseDesc} - Gestão` : baseDesc;
-            await fetch('/api/clients/receivables', {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                clientId: modal.parentId,
-                userId: currentUser.id,
-                description: descGestao,
-                amount: gestaoVal,
-                dueDate,
-                status,
-                category: 'gestao',
-              }),
-            });
-            if (status === 'Pago') {
-              await createTransaction(`Recebimento - ${modal.parentName} (Gestão)`, gestaoVal, 'entrada');
-            }
-          }
-
-          // Se preencheu tráfego
-          if (trafegoVal > 0) {
-            const descTrafego = gestaoVal > 0 ? `${baseDesc} - Tráfego` : (baseDesc === 'Cobrança' ? 'Tráfego' : `${baseDesc} - Tráfego`);
-            await fetch('/api/clients/receivables', {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                clientId: modal.parentId,
-                userId: currentUser.id,
-                description: descTrafego,
-                amount: trafegoVal,
-                dueDate,
-                status,
-                category: 'trafego',
-              }),
-            });
-            if (status === 'Pago') {
-              await createTransaction(`Recebimento - ${modal.parentName} (Tráfego)`, trafegoVal, 'entrada');
-            }
+          await fetch('/api/clients/receivables', { method: 'POST', headers, body: JSON.stringify(payload) });
+          if (newStatus === 'Pago') {
+            await createTransaction(`Recebimento - ${modal.parentName}`, totalAmount, 'entrada');
           }
         }
 
@@ -595,7 +578,7 @@ export default function App() {
         else await fetch('/api/transactions', { method: 'POST', headers, body: JSON.stringify(payload) });
       }
       loadData();
-      setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' });
+      closeModal();
     } catch {
       alert("Erro ao salvar.");
     }
@@ -819,7 +802,7 @@ export default function App() {
                   receivables={receivables}
                   expandedClients={expandedClients}
                   onToggleExpand={toggleClientExpand}
-                  onOpenModal={setModal}
+                  onOpenModal={handleOpenModal}
                   onOpenBillingModal={(client) => setBillingClientId(client.id)}
                   onRenewContract={handleRenewContract}
                   onCancelContract={handleCancelContract}
@@ -843,7 +826,7 @@ export default function App() {
                   empPayments={empPayments}
                   expandedEmployees={expandedEmployees}
                   onToggleExpand={toggleEmpExpand}
-                  onOpenModal={setModal}
+                  onOpenModal={handleOpenModal}
                   onDeleteEmployee={handleDeleteEmployee}
                   onMarkEmpPaymentPaid={markEmpPaymentAsPaid}
                   onDeleteEmpPayment={handleDeleteEmpPayment}
@@ -861,7 +844,7 @@ export default function App() {
               >
                 <FluxoSection
                   transactions={transactions}
-                  onOpenModal={setModal}
+                  onOpenModal={handleOpenModal}
                   onDeleteTransaction={handleDeleteTransaction}
                 />
               </motion.div>
@@ -901,7 +884,7 @@ export default function App() {
         <AnimatePresence>
           {modal.isOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' })} />
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -918,7 +901,7 @@ export default function App() {
                 {modal.parentName && (modal.type === 'receivable' || modal.type === 'empPayment') && !modal.data &&
                   <p className="text-subtle text-sm mb-4">Vinculado a: <span className="text-fg">{modal.parentName}</span></p>
                 }
-                <form onSubmit={handleSave} className="space-y-4 mt-4">
+                <form key={`${modal.type}-${modal.data?.id || 'new'}`} onSubmit={handleSave} className="space-y-4 mt-4">
                   {/* Cliente */}
                   {modal.type === 'client' && (
                     <>
@@ -975,24 +958,50 @@ export default function App() {
                     </>
                   )}
 
-                  {/* Cobrança do cliente - Edição */}
-                  {modal.type === 'receivable' && modal.data && (
+                  {/* Cobrança do cliente (criar e editar): UMA cobrança, discriminando gestão e tráfego */}
+                  {modal.type === 'receivable' && (
                     <>
                       <div>
-                        <label className="text-muted text-xs mb-1 block">Tipo de Cobrança</label>
-                        <select name="category" defaultValue={modal.data?.category || 'gestao'} className={inputClass}>
-                          <option value="gestao">Gestão</option>
-                          <option value="trafego">Tráfego</option>
-                        </select>
-                      </div>
-                      <div>
                         <label className="text-muted text-xs mb-1 block">Descrição</label>
-                        <input name="description" defaultValue={modal.data?.description || 'Cobrança'} placeholder="Descrição (ex: Serviço de Março)" className={inputClass} required />
+                        <input name="description" defaultValue={modal.data ? getReceivableTitle(modal.data.description) : 'Cobrança'} placeholder="Descrição (ex: Mensalidade de Março)" className={inputClass} required />
                       </div>
-                      <div>
-                        <label className="text-muted text-xs mb-1 block">Valor (R$)</label>
-                        <input name="amount" type="number" step="0.01" defaultValue={modal.data?.amount} placeholder="Valor (R$)" className={inputClass} required />
+
+                      <div className="space-y-3 p-3.5 rounded-xl bg-surface-2/40 border border-line-strong">
+                        <div>
+                          <label className="text-fg text-xs font-semibold mb-1 block">Valor da Gestão (R$)</label>
+                          <input
+                            name="gestao_amount"
+                            type="number"
+                            step="0.01"
+                            placeholder="0,00"
+                            value={receivableGestao}
+                            onChange={(e) => setReceivableGestao(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-fg text-xs font-semibold mb-1 block">Valor do Tráfego (R$)</label>
+                          <input
+                            name="trafego_amount"
+                            type="number"
+                            step="0.01"
+                            placeholder="0,00"
+                            value={receivableTrafego}
+                            onChange={(e) => setReceivableTrafego(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-xs pt-2 border-t border-line font-medium">
+                          <span className="text-muted">Total a ser cobrado:</span>
+                          <span className="text-pos font-bold text-sm">
+                            {formatMoney((parseFloat(receivableGestao) || 0) + (parseFloat(receivableTrafego) || 0))}
+                          </span>
+                        </div>
+                        <p className="text-subtle text-[11px] leading-relaxed">
+                          Gera uma única cobrança com o total, mostrando quanto é gestão e quanto é tráfego.
+                        </p>
                       </div>
+
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="text-muted text-xs mb-1 block">Vencimento</label>
@@ -1001,45 +1010,6 @@ export default function App() {
                         <div>
                           <label className="text-muted text-xs mb-1 block">Status</label>
                           <select name="status" defaultValue={modal.data?.status || 'Pendente'} className={inputClass}>
-                            <option value="Pendente">Pendente</option>
-                            <option value="Atrasado">Atrasado</option>
-                            <option value="Pago">Pago</option>
-                          </select>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Cobrança do cliente - Nova Cobrança */}
-                  {modal.type === 'receivable' && !modal.data && (
-                    <>
-                      <div>
-                        <label className="text-muted text-xs mb-1 block">Descrição</label>
-                        <input name="description" defaultValue="Cobrança" placeholder="Descrição (ex: Mensalidade de Março)" className={inputClass} required />
-                      </div>
-
-                      <div className="space-y-3 p-3.5 rounded-xl bg-surface-2/40 border border-line-strong">
-                        <div>
-                          <label className="text-fg text-xs font-semibold mb-1 block">Valor da Gestão (R$)</label>
-                          <input name="gestao_amount" type="number" step="0.01" placeholder="0,00" className={inputClass} />
-                        </div>
-                        <div>
-                          <label className="text-fg text-xs font-semibold mb-1 block">Valor do Tráfego (R$)</label>
-                          <input name="trafego_amount" type="number" step="0.01" placeholder="0,00" className={inputClass} />
-                        </div>
-                        <p className="text-subtle text-[11px] leading-relaxed">
-                          Preencha Gestão, Tráfego ou ambos para cadastrar os valores na mesma tela sem precisar criar duas vezes.
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-muted text-xs mb-1 block">Vencimento</label>
-                          <input name="dueDate" type="date" defaultValue={today()} className={inputClass} />
-                        </div>
-                        <div>
-                          <label className="text-muted text-xs mb-1 block">Status</label>
-                          <select name="status" defaultValue="Pendente" className={inputClass}>
                             <option value="Pendente">Pendente</option>
                             <option value="Atrasado">Atrasado</option>
                             <option value="Pago">Pago</option>
@@ -1103,7 +1073,7 @@ export default function App() {
                   )}
 
                   <div className="pt-4 flex justify-end space-x-3">
-                    <button type="button" onClick={() => setModal({ isOpen: false, type: '', data: null, parentId: null, parentName: '' })} className="px-4 py-2 text-muted hover:text-fg transition-colors">Cancelar</button>
+                    <button type="button" onClick={closeModal} className="px-4 py-2 text-muted hover:text-fg transition-colors">Cancelar</button>
                     <button type="submit" className="px-6 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium transition-colors">Salvar</button>
                   </div>
                 </form>

@@ -6,7 +6,35 @@ import {
   parseDescValues,
   parseInstallment,
   parseLocalDate,
+  buildReceivableDescription,
+  getReceivableTitle,
+  splitReceivableAmounts,
 } from '../lib/dashboard/format.js';
+
+test('cobrança única 450 gestão + 450 tráfego: descrição discrimina e soma 900', () => {
+  const desc = buildReceivableDescription('Cobrança', 450, 450);
+  assert.equal(desc, 'Cobrança — Gestão: R$450.00 | Tráfego: R$450.00');
+  assert.deepEqual(parseDescValues(desc), { gestao: 450, trafego: 450 });
+  assert.equal(getReceivableTitle(desc), 'Cobrança');
+  assert.deepEqual(splitReceivableAmounts({ amount: '900', category: 'gestao', description: desc }), { gestao: 450, trafego: 450 });
+});
+
+test('buildReceivableDescription com só um tipo e título personalizado', () => {
+  assert.equal(buildReceivableDescription('Março', 0, 300), 'Março — Tráfego: R$300.00');
+  assert.equal(buildReceivableDescription('', 1200, 0), 'Cobrança — Gestão: R$1200.00');
+});
+
+test('getReceivableTitle limpa formatos antigos e de contrato', () => {
+  assert.equal(getReceivableTitle('Gestão: R$100.00 | Tráfego: R$200.00 (1/12)'), 'Cobrança (1/12)');
+  assert.equal(getReceivableTitle('Cobrança (Gestão: R$1000.00 | Tráfego: R$500.00)'), 'Cobrança');
+  assert.equal(getReceivableTitle('Cobrança - Tráfego'), 'Cobrança - Tráfego');
+  assert.equal(getReceivableTitle(null), 'Cobrança');
+});
+
+test('splitReceivableAmounts usa category quando a descrição não discrimina', () => {
+  assert.deepEqual(splitReceivableAmounts({ amount: '450', category: 'trafego', description: 'Cobrança - Tráfego' }), { gestao: 0, trafego: 450 });
+  assert.deepEqual(splitReceivableAmounts({ amount: '450', category: 'gestao', description: 'Cobrança' }), { gestao: 450, trafego: 0 });
+});
 
 test('formatDate formata data ISO e lida com vazios/inválidos', () => {
   assert.equal(formatDate('2026-10-05T03:00:00.000Z'), '05/10/2026');
@@ -39,6 +67,18 @@ test('parseDescValues extrai gestão e tráfego da descrição', () => {
   assert.deepEqual(
     parseDescValues('Gestao: R$250,50 | Trafego: R$100,25'),
     { gestao: 250.5, trafego: 100.25 }
+  );
+  assert.deepEqual(
+    parseDescValues('Cobrança (Gestão: R$1000.00 | Tráfego: R$500.00)'),
+    { gestao: 1000, trafego: 500 }
+  );
+  assert.deepEqual(
+    parseDescValues('Serviço de Março (Gestão: R$1500.00)'),
+    { gestao: 1500, trafego: 0 }
+  );
+  assert.deepEqual(
+    parseDescValues('Cobrança (Tráfego: R$750.00)'),
+    { gestao: 0, trafego: 750 }
   );
   assert.deepEqual(
     parseDescValues('Cobrança avulsa'),

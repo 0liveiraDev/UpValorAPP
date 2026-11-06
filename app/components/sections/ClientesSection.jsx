@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StatusBadge from '@/app/components/ui/StatusBadge.jsx';
-import { formatMoney, formatDate } from '@/lib/dashboard/format.js';
+import { formatMoney, formatDate, getReceivableTitle, splitReceivableAmounts } from '@/lib/dashboard/format.js';
 import { formatWhatsappDisplay } from '@/lib/whatsapp/billing.js';
 
 function getInitials(name = '') {
@@ -333,12 +333,9 @@ export default function ClientesSection({
                 (r) => r.client_id === client.id
               );
               const isExpanded = Boolean(expandedClients[client.id]);
-              const pendingSum = clientRecs
-                .filter((r) => r.status !== 'Pago' && r.category !== 'trafego')
-                .reduce((a, b) => a + parseFloat(b.amount), 0);
-              const trafegoSum = clientRecs
-                .filter((r) => r.status !== 'Pago' && r.category === 'trafego')
-                .reduce((a, b) => a + parseFloat(b.amount), 0);
+              const pendingRecs = clientRecs.filter((r) => r.status !== 'Pago');
+              const pendingSum = pendingRecs.reduce((a, r) => a + splitReceivableAmounts(r).gestao, 0);
+              const trafegoSum = pendingRecs.reduce((a, r) => a + splitReceivableAmounts(r).trafego, 0);
               const isActive = (client.contract_status || 'Ativo') === 'Ativo';
               const avatarTone = AVATAR_TONES[idx % AVATAR_TONES.length];
               const whatsappDisplay = client.whatsapp
@@ -535,23 +532,32 @@ export default function ClientesSection({
                               Nenhuma cobrança registrada.
                             </p>
                           ) : (
-                            clientRecs.map((r) => (
+                            clientRecs.map((r) => {
+                              const split = splitReceivableAmounts(r);
+                              return (
                               <div
                                 key={r.id}
                                 className="bg-surface rounded-xl border border-line p-3"
                               >
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <p className="text-fg text-sm font-medium break-words">
-                                        {r.description}
-                                      </p>
-                                      {r.category === 'trafego' && (
-                                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-traffic/20 text-traffic">
-                                          Tráfego
-                                        </span>
-                                      )}
-                                    </div>
+                                    <p className="text-fg text-sm font-medium break-words">
+                                      {getReceivableTitle(r.description)}
+                                    </p>
+                                    {(split.gestao > 0 || split.trafego > 0) && (
+                                      <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                                        {split.gestao > 0 && (
+                                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/12 text-accent-fg uv-num">
+                                            Gestão {formatMoney(split.gestao)}
+                                          </span>
+                                        )}
+                                        {split.trafego > 0 && (
+                                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-traffic/20 text-traffic uv-num">
+                                            Tráfego {formatMoney(split.trafego)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
                                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                       <StatusBadge status={r.status} />
                                       <span className="text-subtle text-xs uv-num">
@@ -611,7 +617,8 @@ export default function ClientesSection({
                                   </div>
                                 </div>
                               </div>
-                            ))
+                              );
+                            })
                           )}
                         </div>
                       </motion.div>
