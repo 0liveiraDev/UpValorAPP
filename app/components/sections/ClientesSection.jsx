@@ -334,8 +334,8 @@ export default function ClientesSection({
               );
               const isExpanded = Boolean(expandedClients[client.id]);
               const pendingRecs = clientRecs.filter((r) => r.status !== 'Pago');
-              const pendingSum = pendingRecs.reduce((a, r) => a + splitReceivableAmounts(r).gestao, 0);
-              const trafegoSum = pendingRecs.reduce((a, r) => a + splitReceivableAmounts(r).trafego, 0);
+              const pendingSum = pendingRecs.reduce((a, r) => a + splitReceivableAmounts(r, client).gestao, 0);
+              const trafegoSum = pendingRecs.reduce((a, r) => a + splitReceivableAmounts(r, client).trafego, 0);
               const isActive = (client.contract_status || 'Ativo') === 'Ativo';
               const avatarTone = AVATAR_TONES[idx % AVATAR_TONES.length];
               const whatsappDisplay = client.whatsapp
@@ -533,7 +533,7 @@ export default function ClientesSection({
                             </p>
                           ) : (
                             clientRecs.map((r) => {
-                              const split = splitReceivableAmounts(r);
+                              const split = splitReceivableAmounts(r, client);
                               return (
                               <div
                                 key={r.id}

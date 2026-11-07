@@ -139,3 +139,22 @@ test('buildChartData atribui corretamente cobrança com category trafego sem pad
   assert.equal(data[3].gestao, 1200);
   assert.equal(data[3].trafego, 450);
 });
+
+test('buildChartData separa gestão e tráfego em cobranças antigas ("Cobrança") quando o cliente possui monthly_fee e traffic_cost', () => {
+  const receivables = [
+    {
+      status: 'Pago',
+      due_date: '2026-09-19',
+      amount: '1500.00',
+      category: 'gestao',
+      description: 'Cobrança',
+      client_monthly_fee: '700.00',
+      client_traffic_cost: '800.00',
+    },
+  ];
+
+  const data = buildChartData(receivables, [], { months: 6, today });
+  assert.equal(data[4].key, '2026-09');
+  assert.equal(data[4].gestao, 700);
+  assert.equal(data[4].trafego, 800);
+});

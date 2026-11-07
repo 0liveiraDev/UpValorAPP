@@ -36,6 +36,39 @@ test('splitReceivableAmounts usa category quando a descrição não discrimina',
   assert.deepEqual(splitReceivableAmounts({ amount: '450', category: 'gestao', description: 'Cobrança' }), { gestao: 450, trafego: 0 });
 });
 
+test('splitReceivableAmounts destrincha cobranças antigas (descrição "Cobrança") pelos valores de gestão e tráfego do cliente', () => {
+  // Valor da cobrança igual à soma do contrato (ex.: AT turismo 700 + 800 = 1500)
+  assert.deepEqual(
+    splitReceivableAmounts(
+      { amount: '1500.00', category: 'gestao', description: 'Cobrança', client_monthly_fee: '700.00', client_traffic_cost: '800.00' }
+    ),
+    { gestao: 700, trafego: 800 }
+  );
+
+  // Valor proporcional (ex.: Barca suchi 200 + 250 = 450, cobrança de 900 -> 400 gestão + 500 tráfego)
+  assert.deepEqual(
+    splitReceivableAmounts(
+      { amount: '900.00', category: 'gestao', description: 'Cobrança' },
+      { monthly_fee: '200.00', traffic_cost: '250.00' }
+    ),
+    { gestao: 400, trafego: 500 }
+  );
+
+  // Cliente apenas de tráfego (fee = 0, traffic = 2000)
+  assert.deepEqual(
+    splitReceivableAmounts(
+      { amount: '2000.00', category: 'gestao', description: 'Cobrança' },
+      { monthly_fee: '0.00', traffic_cost: '2000.00' }
+    ),
+    { gestao: 0, trafego: 2000 }
+  );
+});
+
+test('buildReceivableDescription ignora valores negativos ou zero', () => {
+  assert.equal(buildReceivableDescription('Cobrança', 450, -100), 'Cobrança — Gestão: R$450.00');
+  assert.equal(buildReceivableDescription('Cobrança', -50, 300), 'Cobrança — Tráfego: R$300.00');
+});
+
 test('formatDate formata data ISO e lida com vazios/inválidos', () => {
   assert.equal(formatDate('2026-10-05T03:00:00.000Z'), '05/10/2026');
   assert.equal(formatDate('2026-10-05'), '05/10/2026');

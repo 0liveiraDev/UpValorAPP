@@ -9,12 +9,15 @@ export async function GET(request) {
         let rows;
         if (clientId) {
             [rows] = await pool.query(
-                'SELECT * FROM client_receivables WHERE client_id = ? AND user_id = ? ORDER BY due_date ASC',
+                `SELECT cr.*, c.name as client_name, c.monthly_fee as client_monthly_fee, c.traffic_cost as client_traffic_cost
+           FROM client_receivables cr
+           JOIN clients c ON cr.client_id = c.id
+           WHERE cr.client_id = ? AND cr.user_id = ? ORDER BY cr.due_date ASC`,
                 [clientId, userId]
             );
         } else {
             [rows] = await pool.query(
-                `SELECT cr.*, c.name as client_name 
+                `SELECT cr.*, c.name as client_name, c.monthly_fee as client_monthly_fee, c.traffic_cost as client_traffic_cost
            FROM client_receivables cr
            JOIN clients c ON cr.client_id = c.id
            WHERE cr.user_id = ? ORDER BY cr.due_date ASC`,

@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  parseDescValues,
   parseInstallment,
   formatMoney,
   buildReceivableDescription,
@@ -133,14 +132,17 @@ export default function App() {
   const [receivableTrafego, setReceivableTrafego] = useState('');
 
   const handleOpenModal = useCallback((modalState) => {
-    // Ao editar uma cobrança, pré-preenche a parte de gestão e a de tráfego.
+    // Ao editar uma cobrança, pré-preenche a parte de gestão e a de tráfego (inclusive de cobranças antigas).
+    const parentClient = modalState?.type === 'receivable'
+      ? clients.find((c) => c.id === (modalState.parentId ?? modalState.data?.client_id))
+      : null;
     const split = modalState?.type === 'receivable' && modalState.data
-      ? splitReceivableAmounts(modalState.data)
+      ? splitReceivableAmounts(modalState.data, parentClient)
       : null;
     setReceivableGestao(split?.gestao ? String(split.gestao) : '');
     setReceivableTrafego(split?.trafego ? String(split.trafego) : '');
     setModal(modalState);
-  }, []);
+  }, [clients]);
 
   const closeModal = useCallback(() => {
     setReceivableGestao('');
@@ -329,10 +331,20 @@ export default function App() {
   };
 
   // --- DELETE HELPERS ---
-  const deleteLinkedTransaction = async (description) => {
-    const linked = transactions.filter(t => t.description.toLowerCase() === description.toLowerCase());
-    for (const t of linked) {
-      await fetch(`/api/transactions?id=${t.id}&userId=${currentUser.id}`, { method: 'DELETE' });
+  const findLinkedTransaction = (description, expectedAmount) => {
+    const descLower = String(description || '').toLowerCase();
+    const candidates = transactions.filter(t => String(t.description || '').toLowerCase() === descLower);
+    if (expectedAmount !== undefined && expectedAmount !== null) {
+      const exact = candidates.find(t => Math.abs((parseFloat(t.amount) || 0) - (parseFloat(expectedAmount) || 0)) < 0.01);
+      if (exact) return exact;
+    }
+    return candidates[0] || null;
+  };
+
+  const deleteLinkedTransaction = async (description, expectedAmount) => {
+    const target = findLinkedTransaction(description, expectedAmount);
+    if (target) {
+      await fetch(`/api/transactions?id=${target.id}&userId=${currentUser.id}`, { method: 'DELETE' });
     }
   };
 
@@ -347,7 +359,7 @@ export default function App() {
   const handleDeleteReceivable = async (receivable) => {
     if (receivable.status === 'Pago') {
       // Reverter transação do fluxo de caixa
-      await deleteLinkedTransaction(`Recebimento - ${receivable.client_name}`);
+      await deleteLinkedTransaction(`Recebimento - ${receivable.client_name}`, receivable.amount);
     }
     await fetch(`/api/clients/receivables?id=${receivable.id}&userId=${currentUser.id}`, { method: 'DELETE' });
     loadData();
@@ -495,7 +507,9 @@ export default function App() {
           payment_frequency: data.payment_frequency || 'Mensal',
           monthly_fee: parseFloat(data.monthly_fee) || 0,
           traffic_cost: parseFloat(data.traffic_cost) || 0,
+          traffic_frequency: modal.data?.traffic_frequency || 'Mensal',
           contract_start: data.contract_start || today(),
+          contract_status: modal.data?.contract_status || 'Ativo',
         };
         if (isEdit) await fetch('/api/clients', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
         else await fetch('/api/clients', { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -503,8 +517,16 @@ export default function App() {
       } else if (modal.type === 'receivable') {
         const oldStatus = modal.data?.status;
         const newStatus = data.status || 'Pendente';
-        const gestaoVal = Math.round((parseFloat(data.gestao_amount) || 0) * 100) / 100;
-        const trafegoVal = Math.round((parseFloat(data.trafego_amount) || 0) * 100) / 100;
+        const rawGestao = parseFloat(data.gestao_amount) || 0;
+        const rawTrafego = parseFloat(data.trafego_amount) || 0;
+
+        if (rawGestao < 0 || rawTrafego < 0) {
+          alert('Os valores de Gestão e Tráfego não podem ser negativos.');
+          return;
+        }
+
+        const gestaoVal = Math.round(rawGestao * 100) / 100;
+        const trafegoVal = Math.round(rawTrafego * 100) / 100;
         const totalAmount = Math.round((gestaoVal + trafegoVal) * 100) / 100;
 
         if (totalAmount <= 0) {
@@ -524,17 +546,37 @@ export default function App() {
         };
 
         if (isEdit) {
-          await fetch('/api/clients/receivables', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
-          // Mudou de não-Pago para Pago → criar transação
+          const res = await fetch('/api/clients/receivables', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
+          if (!res.ok) throw new Error('Falha ao atualizar cobrança');
+          const txDesc = `Recebimento - ${modal.parentName}`;
+          const oldAmount = parseFloat(modal.data?.amount) || 0;
+
           if (oldStatus !== 'Pago' && newStatus === 'Pago') {
-            await createTransaction(`Recebimento - ${modal.parentName}`, totalAmount, 'entrada');
-          }
-          // Mudou de Pago para não-Pago → reverter transação
-          if (oldStatus === 'Pago' && newStatus !== 'Pago') {
-            await deleteLinkedTransaction(`Recebimento - ${modal.parentName}`);
+            await createTransaction(txDesc, totalAmount, 'entrada');
+          } else if (oldStatus === 'Pago' && newStatus !== 'Pago') {
+            await deleteLinkedTransaction(txDesc, oldAmount);
+          } else if (oldStatus === 'Pago' && newStatus === 'Pago' && Math.abs(oldAmount - totalAmount) >= 0.01) {
+            const linked = findLinkedTransaction(txDesc, oldAmount);
+            if (linked) {
+              await fetch('/api/transactions', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                  id: linked.id,
+                  userId: currentUser.id,
+                  description: linked.description,
+                  amount: totalAmount,
+                  date: String(linked.date || '').split('T')[0] || today(),
+                  type: 'entrada',
+                }),
+              });
+            } else {
+              await createTransaction(txDesc, totalAmount, 'entrada');
+            }
           }
         } else {
-          await fetch('/api/clients/receivables', { method: 'POST', headers, body: JSON.stringify(payload) });
+          const res = await fetch('/api/clients/receivables', { method: 'POST', headers, body: JSON.stringify(payload) });
+          if (!res.ok) throw new Error('Falha ao criar cobrança');
           if (newStatus === 'Pago') {
             await createTransaction(`Recebimento - ${modal.parentName}`, totalAmount, 'entrada');
           }
@@ -588,35 +630,32 @@ export default function App() {
   const kpis = useMemo(() => {
     // IDs de clientes cancelados — seus receivables não devem contar nos KPIs
     const cancelledClientIds = new Set(clients.filter(c => c.contract_status === 'Cancelado').map(c => c.id));
-    
-    // Filtrar pelo escopo temporal E excluir clientes cancelados
-    const scopeRecs = receivables.filter(r => {
-      if (cancelledClientIds.has(r.client_id)) return false;
-      return isDateInScope(r.due_date || r.dueDate, period, now);
-    });
-    
-    // Discriminar gestão vs tráfego via parsing da descrição ou category
+    const clientById = new Map(clients.map(c => [c.id, c]));
+
+    // Cobranças de clientes ativos (antigas e novas, refletindo no Saldo Geral e em Total a Receber)
+    const activeRecs = receivables.filter(r => !cancelledClientIds.has(r.client_id));
+
+    // Discriminar gestão vs tráfego (suporta descrições novas, antigas e termos do cliente)
     let gestaoAReceber = 0, trafegoAReceber = 0;
     let gestaoRecebido = 0, trafegoRecebido = 0;
-    scopeRecs.forEach(r => {
-      const parsed = parseDescValues(r.description);
-      const amt = parseFloat(r.amount);
-      if (parsed.gestao > 0 || parsed.trafego > 0) {
-        if (r.status !== 'Pago') { gestaoAReceber += parsed.gestao; trafegoAReceber += parsed.trafego; }
-        else { gestaoRecebido += parsed.gestao; trafegoRecebido += parsed.trafego; }
-      } else if (r.category === 'trafego') {
-        if (r.status !== 'Pago') trafegoAReceber += amt;
-        else trafegoRecebido += amt;
+    activeRecs.forEach(r => {
+      const split = splitReceivableAmounts(r, clientById.get(r.client_id));
+      if (r.status !== 'Pago') {
+        gestaoAReceber += split.gestao;
+        trafegoAReceber += split.trafego;
       } else {
-        // Cobranças antigas sem parsing e padrão de gestão
-        if (r.status !== 'Pago') gestaoAReceber += amt;
-        else gestaoRecebido += amt;
+        gestaoRecebido += split.gestao;
+        trafegoRecebido += split.trafego;
       }
     });
-    
-    const totalAReceber = gestaoAReceber + trafegoAReceber;
-    const totalRecebido = gestaoRecebido + trafegoRecebido;
-    const vencido = receivables.filter(r => r.status === 'Atrasado').reduce((a, b) => a + parseFloat(b.amount), 0);
+    gestaoAReceber = Math.round(gestaoAReceber * 100) / 100;
+    trafegoAReceber = Math.round(trafegoAReceber * 100) / 100;
+    gestaoRecebido = Math.round(gestaoRecebido * 100) / 100;
+    trafegoRecebido = Math.round(trafegoRecebido * 100) / 100;
+
+    const totalAReceber = Math.round((gestaoAReceber + trafegoAReceber) * 100) / 100;
+    const totalRecebido = Math.round((gestaoRecebido + trafegoRecebido) * 100) / 100;
+    const vencido = activeRecs.filter(r => r.status === 'Atrasado').reduce((a, b) => a + parseFloat(b.amount), 0);
     const folhaMes = empPayments.filter(p => p.status === 'Pendente' && isDateInScope(p.due_date || p.dueDate, period, now)).reduce((a, b) => a + parseFloat(b.amount), 0);
     const entradas = transactions.filter(t => t.type === 'entrada').reduce((a, b) => a + parseFloat(b.amount), 0);
     const saidas = transactions.filter(t => t.type === 'saida').reduce((a, b) => a + parseFloat(b.amount), 0);
@@ -972,6 +1011,7 @@ export default function App() {
                           <input
                             name="gestao_amount"
                             type="number"
+                            min="0"
                             step="0.01"
                             placeholder="0,00"
                             value={receivableGestao}
@@ -984,6 +1024,7 @@ export default function App() {
                           <input
                             name="trafego_amount"
                             type="number"
+                            min="0"
                             step="0.01"
                             placeholder="0,00"
                             value={receivableTrafego}
