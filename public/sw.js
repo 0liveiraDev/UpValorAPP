@@ -1,5 +1,5 @@
-// Service Worker para UpValor PWA - v4 (cache seguro)
-const CACHE_NAME = 'upvalor-v4';
+// Service Worker para UpValor PWA - v5 (cache seguro)
+const CACHE_NAME = 'upvalor-v5';
 const STATIC_ASSETS = [
     '/manifest.json',
     '/logo.png',

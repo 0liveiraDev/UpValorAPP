@@ -41,7 +41,21 @@ const nextConfig = {
                     },
                 ],
             },
-            // ─── Sem cache para páginas HTML (não para /api/) ───
+            // ─── Sem cache para rotas de API (/api/*) ───
+            {
+                source: '/api/:path*',
+                headers: [
+                    {
+                        key: 'Cache-Control',
+                        value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                    },
+                    {
+                        key: 'X-LiteSpeed-Cache-Control',
+                        value: 'no-cache, no-store',
+                    },
+                ],
+            },
+            // ─── Sem cache para páginas HTML ───
             {
                 source: '/((?!api/|_next/).*)',
                 headers: [

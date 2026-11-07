@@ -123,6 +123,20 @@ export default function DueListPanel({
                             {item.detail}
                           </div>
                         )}
+                        {(item.split?.gestao > 0 || item.split?.trafego > 0) && (
+                          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                            {item.split.gestao > 0 && (
+                              <span className="text-[11px] px-1.5 py-0.5 rounded bg-accent/12 text-accent-fg uv-num">
+                                Gestão {formatMoney(item.split.gestao)}
+                              </span>
+                            )}
+                            {item.split.trafego > 0 && (
+                              <span className="text-[11px] px-1.5 py-0.5 rounded bg-traffic/20 text-traffic uv-num">
+                                Tráfego {formatMoney(item.split.trafego)}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div className="flex flex-wrap items-center gap-2 pt-0.5">
                           <StatusBadge status={item.status} />
                           <span className="text-subtle text-[13px] uv-num">

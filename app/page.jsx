@@ -19,6 +19,7 @@ import {
   isDateInScope,
   getPeriodLabel,
   isCurrentPeriod,
+  formatLocalDateString,
 } from '../lib/dashboard/period.js';
 import { buildChartData } from '../lib/dashboard/chartData.js';
 import { formatWhatsappDisplay } from '../lib/whatsapp/billing.js';
@@ -31,7 +32,7 @@ import AdminSection from './components/sections/AdminSection.jsx';
 import AnunciosSection from './components/sections/AnunciosSection.jsx';
 import WhatsappBillingModal from './components/modals/WhatsappBillingModal.jsx';
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => formatLocalDateString(new Date());
 
 class LiquidBlob {
   constructor(canvas, colors) {
@@ -220,10 +221,16 @@ export default function App() {
   const loadData = useCallback(async () => {
     if (!currentUser) return;
 
-    // Função helper para lidar com o json seguro e garantir arrays
+    // Função helper para lidar com o json seguro e garantir arrays (sem cache do navegador)
     const safeFetch = async (url, setter) => {
       try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
         if (res.ok) {
           const data = await res.json();
           setter(Array.isArray(data) ? data : []);
@@ -348,11 +355,14 @@ export default function App() {
     }
   };
 
+  const isSavingRef = useRef(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   // Deletar cliente: o backend faz cascata completa (receivables + transações vinculadas + cliente)
   const handleDeleteClient = async (clientId, clientName) => {
     if (!confirm(`Excluir "${clientName}" e todas as cobranças vinculadas? Esta ação não pode ser desfeita.`)) return;
     await fetch(`/api/clients?id=${clientId}&userId=${currentUser.id}`, { method: 'DELETE' });
-    loadData();
+    await loadData();
   };
 
   // Deletar cobrança individual do cliente
@@ -362,7 +372,7 @@ export default function App() {
       await deleteLinkedTransaction(`Recebimento - ${receivable.client_name}`, receivable.amount);
     }
     await fetch(`/api/clients/receivables?id=${receivable.id}&userId=${currentUser.id}`, { method: 'DELETE' });
-    loadData();
+    await loadData();
   };
 
   // Deletar funcionário: cascata apaga payments, e as transações
@@ -374,7 +384,7 @@ export default function App() {
       }
     }
     await fetch(`/api/employees?id=${employeeId}&userId=${currentUser.id}`, { method: 'DELETE' });
-    loadData();
+    await loadData();
   };
 
   // Deletar pagamento individual de funcionário
@@ -383,7 +393,7 @@ export default function App() {
       await deleteLinkedTransaction(`Salário - ${payment.employee_name}`);
     }
     await fetch(`/api/employees/payments?id=${payment.id}&userId=${currentUser.id}`, { method: 'DELETE' });
-    loadData();
+    await loadData();
   };
 
   const handleDeleteUser = async (id) => {
@@ -400,7 +410,7 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'cancel', id: client.id, userId: currentUser.id })
     });
-    loadData();
+    await loadData();
   };
 
   // Renovar contrato do cliente com os mesmos termos
@@ -419,7 +429,7 @@ export default function App() {
         traffic_frequency: client.traffic_frequency || 'Mensal',
       })
     });
-    loadData();
+    await loadData();
   };
 
   // Deletar transação do fluxo de caixa — e reverter status da cobrança/pagamento
@@ -448,7 +458,7 @@ export default function App() {
       }
     }
     await fetch(`/api/transactions?id=${trans.id}&userId=${currentUser.id}`, { method: 'DELETE' });
-    loadData();
+    await loadData();
   };
 
   // --- MARCAR COMO PAGO ---
@@ -483,6 +493,7 @@ export default function App() {
   // --- SAVE MODAL ---
   const handleSave = async (e) => {
     e.preventDefault();
+    if (isSavingRef.current) return;
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
     const isEdit = !!modal.data;
@@ -497,6 +508,8 @@ export default function App() {
       });
     };
 
+    isSavingRef.current = true;
+    setIsSaving(true);
     try {
       if (modal.type === 'client') {
         const payload = {
@@ -619,10 +632,13 @@ export default function App() {
         if (isEdit) await fetch('/api/transactions', { method: 'PUT', headers, body: JSON.stringify({ id: modal.data.id, ...payload }) });
         else await fetch('/api/transactions', { method: 'POST', headers, body: JSON.stringify(payload) });
       }
-      loadData();
+      await loadData();
       closeModal();
     } catch {
       alert("Erro ao salvar.");
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
     }
   };
 
@@ -795,15 +811,19 @@ export default function App() {
                   isCurrent={isCurrent}
                   onFilterChange={handleFilterChange}
                   onShift={handleShift}
-                  receivableItems={pendingReceivables.map((r) => ({
-                    id: r.id,
-                    name: r.client_name,
-                    detail: r.description,
-                    installment: parseInstallment(r.description),
-                    dueDate: r.due_date,
-                    status: r.status,
-                    amount: r.amount,
-                  }))}
+                  receivableItems={pendingReceivables.map((r) => {
+                    const parentClient = clients.find((c) => c.id === r.client_id);
+                    return {
+                      id: r.id,
+                      name: r.client_name,
+                      detail: getReceivableTitle(r.description),
+                      split: splitReceivableAmounts(r, parentClient),
+                      installment: parseInstallment(r.description),
+                      dueDate: r.due_date,
+                      status: r.status,
+                      amount: r.amount,
+                    };
+                  })}
                   paymentItems={pendingEmpPayments.map((p) => ({
                     id: p.id,
                     name: p.employee_name,
@@ -815,7 +835,7 @@ export default function App() {
                   }))}
                   onReceive={handleReceive}
                   onPay={handlePay}
-                  chartData={buildChartData(receivables, empPayments, { months: 6, today: now })}
+                  chartData={buildChartData(receivables.filter((r) => !cancelledIds.has(r.client_id)), empPayments, { months: 6, today: now })}
                   transactions={transactions}
                   contracts={{
                     active: kpis.contratosAtivos,
@@ -1114,8 +1134,8 @@ export default function App() {
                   )}
 
                   <div className="pt-4 flex justify-end space-x-3">
-                    <button type="button" onClick={closeModal} className="px-4 py-2 text-muted hover:text-fg transition-colors">Cancelar</button>
-                    <button type="submit" className="px-6 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium transition-colors">Salvar</button>
+                    <button type="button" onClick={closeModal} disabled={isSaving} className="px-4 py-2 text-muted hover:text-fg transition-colors disabled:opacity-50">Cancelar</button>
+                    <button type="submit" disabled={isSaving} className="px-6 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed">{isSaving ? 'Salvando...' : 'Salvar'}</button>
                   </div>
                 </form>
               </motion.div>

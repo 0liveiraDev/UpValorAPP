@@ -326,4 +326,61 @@ describe('API /api/clients — persistência de whatsapp (USE_LOCAL_DB=true)', (
     const clearBody = await clearRes.json();
     assert.deepEqual(clearBody, { success: true, whatsapp: null });
   });
+
+  test('POST /api/clients/receivables unifica 2 POSTs legados seguidos (Gestão 450 + Tráfego 450) em 1 única cobrança de 900', async () => {
+    const recRoute = await import(new URL('app/api/clients/receivables/route.js', rootUrl).href);
+    const listBefore = await (await GET(new Request('http://localhost:3000/api/clients?userId=101'))).json();
+    const alpha = listBefore.find((c) => c.name === 'Cliente Alpha Final');
+    assert.ok(alpha);
+
+    const res1 = await recRoute.POST(
+      new Request('http://localhost:3000/api/clients/receivables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: alpha.id,
+          userId: 101,
+          description: 'Cobrança - Gestão',
+          amount: 450,
+          dueDate: '2026-11-20',
+          status: 'Pendente',
+          category: 'gestao',
+        }),
+      })
+    );
+    assert.equal(res1.status, 200);
+    const body1 = await res1.json();
+
+    const res2 = await recRoute.POST(
+      new Request('http://localhost:3000/api/clients/receivables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: alpha.id,
+          userId: 101,
+          description: 'Cobrança - Tráfego',
+          amount: 450,
+          dueDate: '2026-11-20',
+          status: 'Pendente',
+          category: 'trafego',
+        }),
+      })
+    );
+    assert.equal(res2.status, 200);
+    const body2 = await res2.json();
+    assert.equal(body2.merged, true);
+    assert.equal(body2.id, body1.id);
+    assert.equal(body2.amount, 900);
+    assert.equal(body2.description, 'Cobrança — Gestão: R$450.00 | Tráfego: R$450.00');
+
+    const getRes = await recRoute.GET(
+      new Request(`http://localhost:3000/api/clients/receivables?userId=101&clientId=${alpha.id}`)
+    );
+    assert.match(getRes.headers.get('cache-control') || '', /no-store/);
+    const recs = await getRes.json();
+    const nov20 = recs.filter((r) => String(r.due_date).startsWith('2026-11-20'));
+    assert.equal(nov20.length, 1);
+    assert.equal(Number(nov20[0].amount), 900);
+    assert.equal(nov20[0].description, 'Cobrança — Gestão: R$450.00 | Tráfego: R$450.00');
+  });
 });
