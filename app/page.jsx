@@ -648,13 +648,16 @@ export default function App() {
     const cancelledClientIds = new Set(clients.filter(c => c.contract_status === 'Cancelado').map(c => c.id));
     const clientById = new Map(clients.map(c => [c.id, c]));
 
-    // Cobranças de clientes ativos (antigas e novas, refletindo no Saldo Geral e em Total a Receber)
-    const activeRecs = receivables.filter(r => !cancelledClientIds.has(r.client_id));
+    // Cobranças de clientes ativos dentro do período selecionado (Semanal / Mensal / Trimestral)
+    const scopeRecs = receivables.filter(r => {
+      if (cancelledClientIds.has(r.client_id)) return false;
+      return isDateInScope(r.due_date || r.dueDate, period, now);
+    });
 
     // Discriminar gestão vs tráfego (suporta descrições novas, antigas e termos do cliente)
     let gestaoAReceber = 0, trafegoAReceber = 0;
     let gestaoRecebido = 0, trafegoRecebido = 0;
-    activeRecs.forEach(r => {
+    scopeRecs.forEach(r => {
       const split = splitReceivableAmounts(r, clientById.get(r.client_id));
       if (r.status !== 'Pago') {
         gestaoAReceber += split.gestao;
@@ -671,11 +674,12 @@ export default function App() {
 
     const totalAReceber = Math.round((gestaoAReceber + trafegoAReceber) * 100) / 100;
     const totalRecebido = Math.round((gestaoRecebido + trafegoRecebido) * 100) / 100;
-    const vencido = activeRecs.filter(r => r.status === 'Atrasado').reduce((a, b) => a + parseFloat(b.amount), 0);
-    const folhaMes = empPayments.filter(p => p.status === 'Pendente' && isDateInScope(p.due_date || p.dueDate, period, now)).reduce((a, b) => a + parseFloat(b.amount), 0);
-    const entradas = transactions.filter(t => t.type === 'entrada').reduce((a, b) => a + parseFloat(b.amount), 0);
-    const saidas = transactions.filter(t => t.type === 'saida').reduce((a, b) => a + parseFloat(b.amount), 0);
-    const saldo = entradas - saidas;
+    const vencido = scopeRecs.filter(r => r.status === 'Atrasado').reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
+    const folhaMes = empPayments.filter(p => p.status === 'Pendente' && isDateInScope(p.due_date || p.dueDate, period, now)).reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
+    const scopeTransactions = transactions.filter(t => isDateInScope(t.date, period, now));
+    const entradas = scopeTransactions.filter(t => t.type === 'entrada').reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
+    const saidas = scopeTransactions.filter(t => t.type === 'saida').reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
+    const saldo = Math.round((entradas - saidas) * 100) / 100;
     const contratosAtivos = clients.filter(c => c.contract_status === 'Ativo').length;
     const contratosVencidos = clients.filter(c => c.contract_status === 'Vencido').length;
     return { gestaoAReceber, trafegoAReceber, totalAReceber, gestaoRecebido, trafegoRecebido, totalRecebido, vencido, folhaMes, saldo, contratosAtivos, contratosVencidos };
