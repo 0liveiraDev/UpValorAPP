@@ -47,3 +47,7 @@ database/local-db.*.json
 # next.config duplicates (usar apenas next.config.js)
 next.config.ts
 next.config.mjs
+
+# Artefatos locais de inspeção e cache de arquitetura
+.playwright-mcp/
+app/graphify-out/

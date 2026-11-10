@@ -11,7 +11,7 @@ export default function ThemeToggle({ className = '' }) {
   const label = isDark ? 'Ativar tema claro' : 'Ativar tema escuro';
 
   const baseClasses =
-    'inline-flex items-center gap-1 p-1 h-9 rounded-full border border-line bg-surface-2/80 text-muted hover:text-fg hover:border-line-strong transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 cursor-pointer';
+    'inline-flex items-center gap-1 p-1 h-9 rounded-full uv-glass-btn text-muted hover:text-fg hover:border-line-strong transition-all duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 cursor-pointer';
 
   return (
     <button

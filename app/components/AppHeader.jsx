@@ -23,8 +23,7 @@ export default function AppHeader({
   return (
     <>
       <header
-        className="sticky top-0 z-40 border-b border-line backdrop-blur-xl"
-        style={{ background: 'var(--uv-nav)' }}
+        className="uv-glass-nav sticky top-0 z-40 border-b"
       >
         <div className="max-w-7xl mx-auto px-3 md:px-8 h-16 flex items-center justify-between gap-3">
           {/* Esquerda: Logo */}
@@ -48,7 +47,7 @@ export default function AppHeader({
           {/* Centro (≥ md): Nav Principal em cápsula com passagem fluida e ícone retrátil */}
           <nav
             aria-label="Principal"
-            className="hidden md:flex items-center rounded-full border border-line bg-surface-2/85 p-1 gap-1 shadow-sm"
+            className="hidden md:flex items-center rounded-full border border-line bg-white/[0.05] p-1 gap-1 shadow-sm"
           >
             {navItems.map((item) => {
               const active = activeTab === item.name;
@@ -122,8 +121,7 @@ export default function AppHeader({
       {/* Nav Mobile (< md): Cápsula fixa inferior */}
       <nav
         aria-label="Navegação móvel"
-        className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-full border border-line backdrop-blur-xl p-1 flex gap-1 shadow-xl"
-        style={{ background: 'var(--uv-nav)' }}
+        className="md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-full border uv-glass-nav p-1 flex gap-1 shadow-xl"
       >
         {navItems.map((item) => {
           const active = activeTab === item.name;

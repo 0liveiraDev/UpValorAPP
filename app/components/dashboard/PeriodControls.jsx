@@ -17,7 +17,7 @@ export default function PeriodControls({
       <div
         role="group"
         aria-label="Período"
-        className="inline-flex items-center p-1 rounded-xl bg-surface border border-line"
+        className="inline-flex items-center p-1 rounded-xl uv-glass-btn"
       >
         {PERIOD_FILTERS.map((item) => {
           const active = filter === item;
@@ -40,7 +40,7 @@ export default function PeriodControls({
       </div>
 
       {/* Navigator ‹ label › with badge */}
-      <div className="inline-flex items-center gap-1.5 p-1 rounded-xl bg-surface border border-line">
+      <div className="inline-flex items-center gap-1.5 p-1 rounded-xl uv-glass-btn">
         <button
           type="button"
           aria-label="Período anterior"

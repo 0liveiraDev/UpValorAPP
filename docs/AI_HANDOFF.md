@@ -1,178 +1,154 @@
-# Handoff de Tarefa: Redesign Visual e Animações Fluidas do Painel UpValor
+# Handoff de Tarefa: Identidade Visual Glassmorphism (Liquid/Frosted Glass) & Tipografia Display
 
-## Continuação: refinamentos autorizados aplicados
+## Atualização da execução — 10/11/2026
 
-- `app/components/AppHeader.jsx`: nome do usuário alterado de `hidden sm:block`
-  para `hidden lg:block`, mantendo o avatar em 768px. Padding dos botões do Hub
-  ajustado para `px-3 md:px-3.5 lg:px-4`, preservando o espaçamento em desktop
-  a partir de 1024px e todas as animações existentes.
-- `app/components/sections/ClientesSection.jsx`: contêiner dos cartões com
-  `role="region"`, `aria-label="Lista de Clientes"` e `tabIndex={0}`. Quando
-  há mais de um cliente nos resultados filtrados, aplica
-  `max-h-[620px] overflow-y-auto custom-scrollbar pr-1.5 -mr-1`.
-  Todos os resultados continuam renderizados e o accordion foi preservado.
-- Nenhuma alteração em dados, cálculos, contratos, pagamentos ou autenticação.
-- Verificação desta execução: `node --test tests/*.test.mjs` com 22/22 testes
-  aprovados; `npm run lint` aprovado, sem erros ou avisos. Persiste somente o
-  aviso preexistente do Node `MODULE_TYPELESS_PACKAGE_JSON` nos testes.
-- A validação visual/interativa no navegador não foi repetida nesta execução;
-  ausência de transbordamento em 768px e rolagem efetiva ainda precisam de
-  confirmação visual após estes ajustes. Os resultados abaixo são históricos.
+### Correção solicitada após a entrega
 
-## Atualização da validação pelo Codex — 25/10/2026
+- Preferência atual: login e cadastro sempre escuros, independentemente do tema salvo no sistema. Aplicado `data-theme="dark"` somente no container de acesso e logo fixa da versão escura; tema global e preferência persistida preservados. Verificado em 1366px e 390px com tema global claro/escuro: cores idênticas, logo visível e blur das bolas preservado. Testes 48/48.
 
-Os itens marcados no relato original abaixo são históricos. A validação desta
-continuação encontrou duas pendências visuais e não considera o aceite completo.
+- O usuário solicitou explicitamente preservar o blur da página de login. Após relatar novamente ausência do efeito, o blur passou a ser aplicado diretamente ao canvas: `filter: url('#goo') blur(40px) saturate(120%)`. A vinheta mantém apenas contraste e o card conserva seu vidro. Movimento dos blobs e filtro SVG preservados. Validado em Chrome a 1366 e 390px, sem overflow; capturas `login-blur-canvas-1366.png` e `login-blur-canvas-390.png`. Esta preferência substitui a orientação anterior de remover esse efeito. O endereço acessado pelo usuário ainda precisa ser confirmado se a divergência persistir.
+- Criada conta `teste.visual@upvalor.test` pelo endpoint normal de cadastro, com perfil `user`, exclusivamente no banco JSON local (`USE_LOCAL_DB=true`). Senha entregue ao usuário na conversa, não registrada no código nem neste handoff. Login verificado pela API; conta sem dados financeiros adicionados.
+- Testes após a correção: 48/48 aprovados.
 
-### Alterações desta continuação
+Os passos de implementação abaixo foram executados na branch `feat/glassmorphism`. A descrição original permanece como histórico. Commit e push dessa branch foram autorizados pelo usuário; merge e deploy continuam fora do escopo.
 
-- `app/page.jsx`: classe do canvas movida para o escopo do módulo, com canvas,
-  mouse e contexto passados explicitamente, preservando cores, física e animação;
-  `loadData` estabilizado com `useCallback` e dependências do efeito corrigidas;
-  logo convertido para `next/image` com `unoptimized`, preservando arquivo,
-  dimensões e classes. A dependência temporal preexistente do memo de KPIs foi
-  documentada com exceção pontual de lint para preservar seu comportamento.
-- `app/components/AppHeader.jsx`: logo convertido para `next/image` com
-  `unoptimized`, mantendo dimensões e classes.
-- `app/layout.tsx`: preconnect de fontes com `crossOrigin="anonymous"`.
-- `eslint.config.mjs`: exclusão dos artefatos gerados pelo build Android e
-  permissão de CommonJS nos scripts existentes de banco e seed.
-- `instrumentation.js`, `lib/dashboard/format.js`, `lib/db.local.js`: remoção
-  apenas de parâmetros não utilizados, sem mudanças de lógica.
-- `next.config.js`: separação das propriedades em linhas próprias e normalização
-  de finais de linha; exportação condicional existente preservada.
-- `database/local-db.json`: restaurado byte a byte do backup do redesign após
-  confirmar que todos os registros originais estavam intactos. Removidos do banco
-  ativo apenas os dados da conta piloto 9999: 1 usuário, 4 clientes, 3 funcionários,
-  17 cobranças, 10 pagamentos e 6 transações. Cópia anterior preservada em
-  `database/local-db.before-handoff-cleanup.json`; backup original também mantido.
-- `.gitignore`: backups locais `database/local-db.*.json` ignorados, assim como
-  o banco ativo já era ignorado.
-- Este handoff atualizado com resultados e limitações. As demais mudanças de
-  redesign já estavam no workspace antes desta continuação e foram preservadas.
+- `app/layout.tsx`: Outfit para corpo/UI, Unbounded para display e Geist Mono preservada.
+- `AppHeader` e `ThemeToggle`: navegação de nível 2 e controles internos sem blur adicional; animações preservadas.
+- `app/page.jsx`: login e CRUD com painéis de nível 3, scrims sem blur, inputs e botão secundário de vidro. Fundo do app transparente para revelar os orbs existentes.
+- `WhatsappBillingModal`: painel, campos e botões secundários atualizados.
+- `AnunciosSection`: cards, vinculação de conta, token e bottom-sheet atualizados; tabela interna sem blur duplicado. `min-w-0` no painel desktop permite truncar nomes extensos sem overflow.
+- `ClientesSection`, `FuncionariosSection`, `FluxoSection`: buscas atualizadas; alerta de vencidos com superfície de vidro.
+- `PeriodControls` e `HistoryCharts`: controles e tooltip atualizados. `.uv-glass-inset` mantém superfícies internas sem backdrop-filter próprio.
+- Lint anterior confirmado diretamente em `HEAD`: import sem uso removido; ID da conta extraído para manter a dependência primitiva do callback; supressão pontual documentada para sincronização remota no efeito, seguindo a convenção existente. Nenhuma regra financeira, autenticação ou endpoint foi alterado.
+- `AGENTS.md`: bloco de instruções Next.js acrescentado automaticamente por `next dev`.
+- Graphify: mapa estrutural de `app/`, 169 nós e 343 relações em `app/graphify-out/`. CSS não é analisado pelo extrator. O CLI alertou sobre esquema antigo de IDs; o mapa foi usado como apoio, com conferência direta dos componentes.
+- `scripts/verify-glass.mjs`: validação em Chrome headless com APIs interceptadas e dados fictícios, incluindo nomes longos, caracteres especiais e listas vazias. Não grava dados reais nem valida a integração externa Meta.
 
-### Verificação executada
+Verificações: `node --test tests/*.test.mjs` passou com **48/48** (o total de 22 abaixo estava desatualizado); `npm run lint` passou sem erros ou warnings; `npm run build` passou. As **45 capturas** (temas dark/light, desktop 1366×768, mobile 390×844, login, seis abas, CRUD, WhatsApp, token, métricas e transparência reduzida) passaram sem overflow horizontal, blur aninhado ou erros de JavaScript. Resultados visuais detalhados estão em `docs/validation/glassmorphism/results.json`; prancha em `docs/validation/glassmorphism/storyboard_implementado.png`.
 
-- `npm run lint`: aprovado, sem erros ou avisos.
-- `node --test tests/*.test.mjs`: 22/22 aprovados. O Node ainda emite o aviso
-  preexistente `MODULE_TYPELESS_PACKAGE_JSON`; não foi alterado o modo de módulos.
-- Servidor Next dev iniciado na porta 3000 e encerrado após os testes.
-- Página inicial e as cinco APIs do handoff retornaram HTTP 200. Para o usuário
-  original, arrays com 3 clientes, 52 cobranças, 2 funcionários, 18 pagamentos e
-  22 transações. Banco local (`USE_LOCAL_DB=true`), sem validação de MySQL remoto.
-- Chromium/Playwright usando a conta piloto já existente: login real, navegação
-  Painel/Clientes/Funcionários/Fluxo, expansão e recolhimento de ambos os accordions,
-  troca de tema nas resoluções 1366×768, 1920×1080, 768×1024 e 390×844.
-  Nenhuma exceção JavaScript (`pageerror`). Tema claro persistiu após reload;
-  navegação e accordions também verificados em tema claro a 768 e 390 px.
-- Rolagem efetiva confirmada em A Receber e Últimas Transações no desktop e em
-  A Receber/A Pagar no mobile. Nos demais casos, os registros cabiam no contêiner.
-- Capturas locais temporárias: `.next/handoff-light-768.png` e
-  `.next/handoff-light-390.png`. Não foram executadas operações de pagamento,
-  recebimento ou alteração de contratos durante a validação.
+O dev com Turbopack falhou ao baixar fontes; foi reiniciado com `npx next dev --webpack -p 3099`, com carregamento real de Outfit e Unbounded confirmado no navegador. Avisos preexistentes de MODULE_TYPELESS_PACKAGE_JSON e Cache-Control não impedem testes/build. Headroom foi consultado, mas o proxy de compressão local estava indisponível.
 
-### Refinamentos Autorizados pelo Usuário (Execução Imediata)
-
-O usuário autorizou explicitamente a aplicação dos dois refinamentos pontuais:
-
-1. **Ajuste de Transbordamento em 768px (`app/components/AppHeader.jsx`):**
-   - No bloco direito do cabeçalho, alterar a visibilidade do texto com o nome do usuário de `hidden sm:block` para `hidden lg:block`. Desta forma, na resolução `md` (768px) é exibido o avatar circular com as iniciais do usuário, e o nome completo é exibido a partir de `lg` (1024px).
-   - Ajustar o padding e espaçamento horizontal dos botões do Hub para `px-3 md:px-3.5 lg:px-4` se necessário, garantindo que a largura total em 768px não ultrapasse o viewport (zero rolagem horizontal).
-
-2. **Scroll Interno na Lista Geral de Clientes (`app/components/sections/ClientesSection.jsx`):**
-   - Envolver o contêiner da lista de cartões de clientes em uma região rolável com limite de altura suave (`max-h-[620px] overflow-y-auto custom-scrollbar pr-1.5 -mr-1`) quando houver múltiplos clientes, adicionando `role="region" aria-label="Lista de Clientes" tabIndex={0}`.
-   - Preservar integralmente o accordion animado de cobranças existente dentro de cada cartão.
-
-3. **Verificação Obrigatória:**
-   - Executar `npm run lint` e `node --test tests/*.test.mjs` para garantir que o lint permaneça 100% limpo e todos os 22 testes passem.
-
+**Pendente apenas aprovação visual do usuário antes de merge/deploy**, conforme a restrição original. Sem alegação de comparação pixel a pixel com os arquivos externos originais, de auditoria WCAG completa ou de teste em hardware mobile. Se houver publicação futura, aplicar a auditoria LGPD obrigatória do projeto.
 
 ---
 
-**Data/Hora:** 2026-10-24 23:28 BRT (2026-10-25 02:28 UTC)  
-**Projeto:** UpValor - Gestão Financeira  
-**Branch:** `feat/painel-redesign`
+**Data/Hora:** 2026-11-10 12:12 BRT (2026-11-10 15:12 UTC)
+**Projeto:** UpValor - Gestão Financeira
+**Branch de Teste Isolada:** `feat/glassmorphism` (não fazer merge/deploy em `main` até validação explícita do usuário)
 
 ---
 
 ## 1. Objetivo da Tarefa
-Concluir a modernização do design do sistema financeiro UpValor baseando-se nas referências visuais e comportamentais do **Dashboard V16** decodificadas via `/storyboard`, preservando 100% dos dados reais, regras de contratos, cálculos de KPIs, fluxos de recebimento e pagamento, e autenticação.
+Aplicar uma identidade visual consistente de **Glassmorphism (Liquid/Frosted Glass)** em todo o sistema UpValor (Dark Mode e Light Mode), combinada com nova hierarquia tipográfica inspirada nas referências enviadas pelo usuário (`Nura` / `Surgena` -> geometric display + sans-serif limpa via `next/font/google`) e nas referências decodificadas pelo `/storyboard` em `C:\Users\Administrator\Downloads\REFERENCIAS`.
+
+Tudo deve ser feito **em modo teste** na branch `feat/glassmorphism`, preservando 100% da lógica de negócio, cálculos de KPIs, regras de contratos, pagamentos/recebimentos, integração Meta Ads e os 22 testes unitários.
 
 ---
 
-## 2. Contexto e Regras de Design
-- **Inspiração:** Storyboard do Dashboard V16 (`C:\Users\Administrator\Downloads\painel_financeiro_todos_os_frames` e `C:\Users\Administrator\Downloads\painel_financeiro_referencias_antigravity`).
-- **Identidade da Marca:** Azul principal (`#3b82f6` em dark / `#2563eb` em light) como cor de destaque, mantendo modo Dark e modo Light via tokens `--uv-*` e `data-theme`.
-- **Top Navigation Hub:** Cápsula central com efeito lamp/glow (`layoutId="lampNav"`), transição suave de aba com spring physics, e ícone expansível/retrátil com `AnimatePresence`.
-- **Bento Grid & Indicadores:** 
-  - `Saldo Atual`: Hero card com matrix decorativa de steps no canto direito, valor tabular grande e detalhamento de Gestão e Tráfego recebidos no período.
-  - `Total a Receber`: Card com badge verde, valor tabular e 2 colunas com barras verticais de acento.
-  - `Folha do Mês`: Card com badge âmbar/laranja, valor tabular e barra horizontal segmentada.
-  - `Faixa Operacional`: 3 cards compactos (Contratos Ativos, Vencidos, Total de Clientes).
-- **Listas com Scroll Interno:**
-  - `A Receber` e `A Pagar aos Funcionários` com scroll interno (`max-h-[400px] overflow-y-auto custom-scrollbar`) para exibir todos os itens sem esconder registros.
-  - `Últimas Transações` com scroll interno (`max-h-[360px] overflow-y-auto custom-scrollbar`) e espaçamento generoso na parte inferior da tela (`pb-36 md:pb-24`) para evitar corte no fim do scroll da página.
-- **Seções Secundárias (Clientes, Funcionários, Fluxo, Admin):**
-  - Modularizadas em `app/components/sections/`.
-  - Cards de resumo no topo, busca rápida por texto, pílulas de filtro de status, e accordion fluido com `AnimatePresence` + `motion.div` (`height: 0 -> auto`) e rotação de chevron.
+## 2. Contexto, Arquitetura de Tokens e Regras Técnicas
+
+### 2.1. Arquitetura de 3 Níveis de Elevação (Centralizada em `app/globals.css`)
+- **Nível 1 — Superfícies e Cards de Conteúdo (`.uv-glass` / `.uv-card`):**
+  - Fundo: `rgba(255, 255, 255, 0.08)` no dark mode / `rgba(255, 255, 255, 0.65)` no light mode (`--uv-glass-1`).
+  - Desfoque: `backdrop-filter: blur(16px) saturate(140%)`.
+  - Borda: `1px solid var(--uv-glass-border)` (`rgba(255, 255, 255, 0.15)` no dark / `rgba(255, 255, 255, 0.8)` no light) + brilho superior interno `inset 0 1px 0 0 var(--uv-glass-highlight)`.
+  - Sombra: `0 8px 32px 0 rgba(0, 0, 0, 0.32)` (dark) / `0 8px 32px 0 rgba(15, 23, 42, 0.10)` (light).
+  - Raio: `18px` (`rounded-2xl`).
+  - Hover natural (`300ms ease-out`): transição suave elevando o fundo (`--uv-glass-1-hover`) e a borda (`--uv-glass-border-hover`: `rgba(255, 255, 255, 0.30)` no dark), sem saltos de layout.
+- **Nível 2 — Navegação, Headers e Barras Flutuantes (`.uv-glass-nav`):**
+  - Fundo: `rgba(255, 255, 255, 0.06)` no dark / `rgba(255, 255, 255, 0.60)` no light (`--uv-glass-2`) com `backdrop-filter: blur(20px) saturate(150%)`.
+  - Divisores sutis em `--uv-glass-divider` (`rgba(255, 255, 255, 0.10)` no dark).
+- **Nível 3 — Modais, Dropdowns, Bottom-Sheets e Popovers (`.uv-glass-overlay`):**
+  - Fundo com maior opacidade (`--uv-glass-3`: `0.16` composto sobre `--uv-glass-3-tint` para contraste WCAG AA garantido) e `backdrop-filter: blur(24px) saturate(160%)`.
+  - Backdrop/Scrim de modais (`.uv-scrim`): escurecimento sem `backdrop-filter` próprio para evitar duplo blur sob o painel do modal.
+- **Formulários e Botões Secundários (`.uv-glass-input` e `.uv-glass-btn`):**
+  - Sem `backdrop-filter` próprio (pois vivem dentro de `.uv-card` ou `.uv-glass-overlay`), usando reflexo interno superior (`inset 0 1px 0 0 var(--uv-glass-sheen)`), borda translúcida e foco com anel suave.
+
+### 2.2. Regras de Performance (Anti-Lag 60 FPS) e Acessibilidade
+1. **Proibido Aninhamento de Blurs (GPU Churn):**
+   - NUNCA colocar um elemento com `backdrop-blur` / `.uv-card` dentro de outro container que já tenha `backdrop-blur` (ou ancestral com `filter: blur(...)`).
+   - A animação `.uv-enter` não deve usar `filter: blur(...)` durante o keyframe para não criar um *backdrop root* que quebre o `backdrop-filter` dos cards filhos.
+2. **Contraste WCAG AA:**
+   - Manter textos primários em `--uv-fg`, secundários em `--uv-muted` e números tabulares em `.uv-num`.
+3. **Fallback para Acessibilidade:**
+   - `@media (prefers-reduced-transparency: reduce)` e `@supports not (backdrop-filter: blur(1px))` desativam os blurs e aplicam superfícies sólidas (`--uv-surface-solid`).
 
 ---
 
-## 3. Arquivos Envolvidos
-- `app/page.jsx`: Integração principal, abas animadas com `<AnimatePresence mode="wait">`, modais e handlers de ação.
-- `app/components/AppHeader.jsx`: Header sticky com cápsula do Hub, `lampNav`, avatar com iniciais e `ThemeToggle`.
-- `app/components/theme/ThemeProvider.jsx` & `ThemeToggle.jsx`: Controle de tema e transição circular.
-- `app/components/dashboard/`:
-  - `DashboardPanel.jsx`: Composição do Painel.
-  - `FinanceKpis.jsx`: Bento grid dos 3 KPIs principais.
-  - `OperationalStrip.jsx`: 3 cards operacionais.
-  - `DueListPanel.jsx`: Painel de cobranças e folha com scroll interno e avatares com iniciais.
-  - `HistoryCharts.jsx`: 3 gráficos Recharts dos últimos 6 meses.
-  - `RecentTransactions.jsx`: Lista de transações recentes com scroll interno.
-- `app/components/sections/`:
-  - `ClientesSection.jsx`: Tela de clientes com KPIs, filtros e accordion animado de cobranças.
-  - `FuncionariosSection.jsx`: Tela de funcionários com KPIs e accordion de pagamentos.
-  - `FluxoSection.jsx`: Fluxo de caixa com hero card azul, filtros e lançamentos.
-  - `AdminSection.jsx`: Gerenciamento de usuários.
-- `app/globals.css`: Tokens CSS, custom scrollbars e classes utilitárias.
-- `next.config.js`: Configuração com `output: 'export'` condicional para evitar erro 500 em rotas de API no `next dev`.
-- `tests/*.test.mjs`: Testes automatizados cobrindo formatação, períodos, gráficos e tema.
+## 3. O que Já Foi Feito
+
+1. **Decodificação das Referências via `/storyboard`:**
+   - Inspecionada a pasta `C:\Users\Administrator\Downloads\REFERENCIAS` (`image.png` do app *nido Smart Home OS* em vidro claro acetinado + vídeo `Glassy Dashboard V30` em vidro escuro com orbs ambientes, cápsulas translúcidas e bento grid).
+   - Extraídos os 33 quadros do vídeo e geradas as pranchas `glass_storyboard_1.png` e `glass_storyboard_2.png` no diretório de artifacts da conversa.
+   - Analisadas também as duas referências tipográficas enviadas pelo usuário (`NURA` e `SURGENA` — fontes geométricas display de traço largo e curvas modernas).
+2. **Isolamento em Modo Teste (Git Branch):**
+   - Criada e ativada a branch `feat/glassmorphism` a partir de `main` (`b78ea5c`).
+3. **Implementação Completa dos Tokens e Classes Base em `app/globals.css`:**
+   - Definidos todos os tokens de Glassmorphism para Dark Mode e Light Mode (`--uv-glass-1`, `--uv-glass-1-hover`, `--uv-glass-2`, `--uv-glass-3`, `--uv-glass-3-tint`, `--uv-glass-border`, `--uv-glass-border-hover`, `--uv-glass-divider`, `--uv-glass-highlight`, `--uv-glass-shadow`, `--uv-glass-overlay-shadow`, `--uv-glass-input`, `--uv-glass-btn-hover`, `--uv-glass-sheen`, `--uv-scrim`, `--uv-orb-1..3`).
+   - Criado o fundo ambiente fixo `body::before` com 3 orbs radiais suaves que dão profundidade real à refração do vidro nos temas escuro e claro.
+   - Criadas dentro de `@layer components` as classes utilitárias `.uv-glass`, `.uv-card` (Nível 1), `.uv-glass-nav` (Nível 2), `.uv-glass-overlay` (Nível 3), `.uv-scrim`, `.uv-glass-input` e `.uv-glass-btn`.
+   - Implementados os fallbacks `@media (prefers-reduced-transparency: reduce)` e `@supports not (backdrop-filter: blur(1px))`.
+   - Removido `filter: blur(4px)` de `@keyframes uv-enter` para não invalidar o `backdrop-filter` dos cards filhos.
 
 ---
 
-## 4. O que Já Foi Feito
-1. Resolução do erro 500 das rotas de API em `next dev` tornando `output: 'export'` condicional em `next.config.js`.
-2. Criação e estilização das listas de `A Receber` e `A Pagar aos Funcionários` com scroll interno (`overflow-y-auto custom-scrollbar`) e remoção da limitação rígida de itens visíveis.
-3. Ajuste de `Últimas Transações` com scroll interno e aumento do padding inferior do `<main>` para `pb-36 md:pb-24`, eliminando o problema do scroll cortar antes do final.
-4. Restauração e aprimoramento da animação fluida do Hub de navegação com `layoutId="lampNav"`, mola responsiva e ícone retrátil no active tab.
-5. Modularização e redesign visual completo das telas de `Clientes`, `Funcionários`, `Fluxo de Caixa` e `Admin` com base no Frame 0106 e Frame 0181 do Storyboard.
-6. Animações de encolher/expandir com `AnimatePresence` (`height: 0 -> auto`) e rotação de chevron nos clientes e colaboradores.
-7. Suite de 22 testes unitários (`node --test tests/*.test.mjs`) 100% passando.
+## 4. O que Iria Terminar (Próximos Passos para Concluir)
+
+### Passo 1 — Tipografia Display + Sans Geométrica (`app/layout.tsx`)
+- Importar `Outfit` (corpo/UI geométrica limpa, variável `--font-outfit`) e `Unbounded` (display geométrica inspirada em *Nura/Surgena* para `h1` e `.uv-display`, variável `--font-unbounded`), mantendo `Geist_Mono` (`--font-geist-mono`) de `next/font/google`.
+- Aplicar `${outfit.variable} ${unbounded.variable} ${geistMono.variable}` no `<body>` em `app/layout.tsx` (as variáveis já estão conectadas em `app/globals.css`).
+
+### Passo 2 — Navegação e Header em Nível 2 (`app/components/AppHeader.jsx` e `ThemeToggle.jsx`)
+- Em `app/components/AppHeader.jsx`:
+  - Trocar o `<header>` sticky para usar `uv-glass-nav sticky top-0 z-40 border-b` (removendo o `style={{ background: 'var(--uv-nav)' }}` e `backdrop-blur-xl` avulso).
+  - Na `<nav aria-label="Principal">` desktop (que está dentro do `<header>` com blur), usar superfície translúcida interna **sem** `backdrop-blur` aninhado (`bg-white/[0.05] dark / border-line`).
+  - Na `<nav aria-label="Navegação móvel">` fixa inferior (`md:hidden fixed bottom-4`), aplicar `uv-glass-nav` (Nível 2) e remover o `style={{ background: 'var(--uv-nav)' }}`.
+- Em `app/components/theme/ThemeToggle.jsx`:
+  - Aplicar `uv-glass-btn` (sem blur aninhado, pois fica dentro do `AppHeader`).
+
+### Passo 3 — Login, Modais Nível 3 e Inputs de Vidro (`app/page.jsx`)
+- Atualizar as constantes de input no topo de `app/page.jsx`:
+  - `loginInputClass`: `"uv-glass-input w-full rounded-xl px-4 py-2.5 text-sm"`
+  - `inputClass`: `"uv-glass-input w-full rounded-xl px-4 py-2.5 text-sm"`
+- Na tela de Login (`app/page.jsx` linhas ~706-733):
+  - Evitar duplo `backdrop-filter` entre o overlay fixo e o card de login: deixar o card de login com `uv-glass-overlay` (Nível 3, `backdrop-blur-[24px]`) e o overlay de fundo apenas como vinheta de contraste sem `backdropFilter` duplicado (já que o SVG filter `#goo` no `<LiquidCanvas />` faz a fusão líquida dos blobs).
+- No Modal CRUD principal (`app/page.jsx` linhas ~945-952):
+  - Trocar o backdrop `<div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />` por `<div className="absolute inset-0 uv-scrim" onClick={closeModal} />` (sem blur duplicado).
+  - Trocar o container `<motion.div>` do modal de `bg-surface border border-line-strong rounded-2xl shadow-2xl` para `uv-glass-overlay rounded-2xl w-full max-w-md p-6 z-10`.
+  - No botão secundário `"Cancelar"`, aplicar `uv-glass-btn rounded-xl px-4 py-2`.
+
+### Passo 4 — Modais Secundários em Nível 3 (`WhatsappBillingModal.jsx` e `AnunciosSection.jsx`)
+- Em `app/components/modals/WhatsappBillingModal.jsx`:
+  - Backdrop: usar `uv-scrim` (sem `backdrop-blur-sm`).
+  - Painel do modal: usar `uv-glass-overlay rounded-2xl w-full max-w-lg p-4 sm:p-5 z-10 max-h-[90vh] flex flex-col overflow-hidden`.
+  - Input de WhatsApp e botões secundários (`Copiar`, `Salvar`, `Fechar`): aplicar `uv-glass-input` e `uv-glass-btn`.
+- Em `app/components/sections/AnunciosSection.jsx`:
+  - Nos cards principais (`Lista de Clientes` na linha ~541, `Painel Fixo à Direita` na linha ~611 e tabela de campanhas na linha ~299): trocar `rounded-2xl border border-line bg-surface` por `uv-card` (Nível 1), garantindo que os subcards internos de métricas (`MetricCard` linha ~40) **não** tenham `backdrop-blur` (usam apenas `bg-surface-2/60 border border-line` para respeitar a proibição de blurs aninhados).
+  - Nos 2 modais de `AnunciosSection.jsx` (Bottom-Sheet Mobile linha ~655 e Modal de Token Meta linha ~728):
+    - Trocar os backdrops `bg-black/75 backdrop-blur-sm` por `uv-scrim`.
+    - Trocar os painéis de `bg-surface border ... shadow-2xl` por `uv-glass-overlay`.
+    - No header interno do bottom-sheet mobile (`linha ~688`), usar `bg-transparent` em vez de `bg-surface` opaco.
+    - Nos inputs/selects/textarea (`AccountLinker` linhas ~129, ~143 e `tokenInput` linha ~766) e botões secundários (`Configurar Token`, `Atualizar`, `Cancelar`): usar `uv-glass-input` e `uv-glass-btn`.
+
+### Passo 5 — Campos de Busca, Controles de Período e Seções (`ClientesSection`, `FuncionariosSection`, `FluxoSection`, `PeriodControls`, `HistoryCharts`)
+- Em `ClientesSection.jsx` (linha ~112), `FuncionariosSection.jsx` (linha ~93) e `FluxoSection.jsx` (linha ~70):
+  - Trocar os campos de busca `<input type="search" ...>` para usarem `uv-glass-input h-10 pl-9 pr-4 rounded-full text-sm w-48 sm:w-60`.
+  - Em `ClientesSection.jsx` (alerta de Contratos Vencidos linha ~213): aplicar `uv-glass` com borda `border-neg/35` e nos itens internos manter fundo translúcido sem blur aninhado.
+- Em `app/components/dashboard/PeriodControls.jsx` (linhas ~20 e ~43):
+  - Aplicar `uv-glass` (ou `uv-glass-btn` nos controles segmentados de período e navegação de mês/semana).
+- Em `app/components/dashboard/HistoryCharts.jsx` (linha ~32):
+  - No `CustomTooltip` do Recharts, usar `uv-glass-overlay rounded-xl px-3.5 py-2.5 text-xs` (Nível 3 — popover) sem inline `background: var(--uv-surface)`.
+
+### Passo 6 — Verificação Obrigatória e Validação Ao Vivo
+1. Executar `node --test tests/*.test.mjs` (confirmar 22/22 testes passando).
+2. Executar `npm run lint` (confirmar 0 erros e 0 warnings).
+3. Executar `npm run build` para comprovar que o build de produção compila sem erros.
+4. Iniciar servidor dev local (`npx next dev -p 3099`), inspecionar via Playwright nos modos **Dark** e **Light** (desktop `1366×768` e mobile `390×844`), verificar programaticamente que **nenhum elemento com `backdrop-filter` está aninhado dentro de outro elemento com `backdrop-filter`**, gerar a prancha `storyboard_implementado.png` e chamar o usuário para validar antes de qualquer merge ou deploy.
 
 ---
 
-## 5. Próximos Passos para o Codex
-1. **Validação no Servidor de Dev:**
-   - Iniciar ou inspecionar o servidor dev do Next.js na porta 3000 (`npm run dev` ou `npx next dev -p 3000`).
-   - Verificar se as chamadas de API (`/api/clients`, `/api/clients/receivables`, `/api/employees`, `/api/employees/payments`, `/api/transactions`) respondem com 200 e dados válidos.
-2. **Checagem Visual e Interativa:**
-   - Navegação do Hub (Painel -> Clientes -> Funcionários -> Fluxo): confirmar o deslizamento do pill e a troca de abas sem travamentos.
-   - Accordion de Clientes: clicar no chevron/linha e confirmar animação suave de expansão e recolhimento.
-   - Scroll das Listas: testar a rolagem independente de `A Receber`, `A Pagar` e `Últimas Transações`.
-   - Alternância de Tema: clicar no botão de sol/lua e verificar a transição visual entre escuro e claro.
-3. **Qualidade e Limpeza:**
-   - Executar `npm run lint` ou `npx eslint app/` para assegurar que não haja advertências.
-   - Executar `node --test tests/*.test.mjs` para garantir integridade contínua.
-   - Restaurar `database/local-db.json` a partir do backup se houver dados fictícios residuais antes de finalizar a branch.
-
----
-
-## 6. Critérios de Aceite
-- [x] API routes funcionais em ambiente de desenvolvimento (status 200).
-- [x] Listas de `A Receber` e `A Pagar aos Funcionários` com scroll interno fluido.
-- [x] `Últimas Transações` totalmente visível até o final da página com scroll funcional.
-- [x] Animação de passagem fluida no Hub superior e ícone adaptativo.
-- [x] Animação de encolher/expandir detalhes nos clientes e funcionários funcionando de forma suave.
-- [x] Telas de Clientes, Funcionários e Fluxo alinhadas à estética do Dashboard V16.
-- [x] Zero regressões em cálculos de saldo, folha e totais de recebimento.
-- [x] Todos os 22 testes unitários passando.
+## 5. Como Continuar via Codex ou Nova Sessão
+Para executar automaticamente pelo Codex no terminal:
+```powershell
+"Leia AGENTS.md e docs/AI_HANDOFF.md. Continue a implementação na branch feat/glassmorphism a partir do Passo 1 da seção 4, valide com testes e lint e relate o resultado." | codex exec --sandbox workspace-write
+```

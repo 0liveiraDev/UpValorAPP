@@ -1,0 +1,471 @@
+{
+  "results": [
+    {
+      "name": "login-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback"
+      ]
+    },
+    {
+      "name": "login-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "login-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "login-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Painel-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "Unbounded Fallback"
+      ]
+    },
+    {
+      "name": "Clientes-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "crud-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "whatsapp-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Funcionários-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Fluxo-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Anúncios-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "token-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "Geist Mono",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "metricas-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Admin-dark-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Painel-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Clientes-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "crud-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "whatsapp-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Funcionários-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Fluxo-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Anúncios-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "token-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "Geist Mono",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "metricas-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Admin-dark-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Painel-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Clientes-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "crud-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "whatsapp-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Funcionários-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Fluxo-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Anúncios-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "token-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "Geist Mono",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "metricas-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Admin-light-1366",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Painel-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Clientes-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "crud-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "whatsapp-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Funcionários-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Fluxo-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Anúncios-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "token-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "Geist Mono",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "metricas-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Outfit Fallback",
+        "Unbounded",
+        "Geist Mono",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "Admin-light-390",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    },
+    {
+      "name": "transparencia-reduzida",
+      "overflow": false,
+      "nested": [],
+      "fonts": [
+        "Outfit",
+        "Unbounded",
+        "__nextjs-Geist"
+      ]
+    }
+  ],
+  "errors": []
+}

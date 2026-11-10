@@ -10,7 +10,6 @@ import {
   ChevronRight,
   X,
   BarChart3,
-  TrendingUp,
   MousePointerClick,
   Eye,
   CheckCircle2,
@@ -126,7 +125,7 @@ function AccountLinker({ client, accounts, onSave }) {
         <select
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="flex-1 min-w-0 h-9 rounded-xl border border-line bg-surface px-2.5 text-xs sm:text-sm text-fg focus:outline-none focus:ring-1 focus:ring-accent"
+          className="flex-1 min-w-0 h-9 rounded-xl uv-glass-input px-2.5 text-xs sm:text-sm text-fg focus:outline-none focus:ring-1 focus:ring-accent"
         >
           <option value="">Selecionar conta da Meta…</option>
           {accounts.map((a) => (
@@ -140,7 +139,7 @@ function AccountLinker({ client, accounts, onSave }) {
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="act_123456789"
-          className="flex-1 min-w-0 h-9 rounded-xl border border-line bg-surface px-3 text-xs sm:text-sm text-fg focus:outline-none focus:ring-1 focus:ring-accent"
+          className="flex-1 min-w-0 h-9 rounded-xl uv-glass-input px-3 text-xs sm:text-sm text-fg focus:outline-none focus:ring-1 focus:ring-accent"
         />
       )}
       <button
@@ -193,7 +192,7 @@ function ClientMetricsView({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="h-8 px-3 rounded-full border border-line bg-surface-2 hover:bg-surface-2/80 text-xs font-medium text-fg inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
+            className="h-8 px-3 rounded-full uv-glass-btn text-xs font-medium text-fg inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-accent' : ''}`} />
             <span>Atualizar</span>
@@ -296,7 +295,7 @@ function ClientMetricsView({
       </div>
 
       {/* Card de Campanhas com Rolagem Interna (.custom-scrollbar) */}
-      <div className="rounded-2xl border border-line bg-surface overflow-hidden">
+      <div className="uv-card uv-glass-inset overflow-hidden">
         <div className="px-4 py-3 border-b border-line/60 flex items-center justify-between">
           <p className="font-semibold text-sm sm:text-base text-fg">Campanhas no Período</p>
           <span className="text-xs text-muted uv-num">
@@ -403,8 +402,10 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
     loadAccounts();
   }, [loadAccounts]);
 
+  const selectedAccountId = selected?.meta_ad_account_id;
+
   const loadInsights = useCallback(async () => {
-    if (!selected?.meta_ad_account_id || !configured) {
+    if (!selectedAccountId || !configured) {
       setInsights(null);
       return;
     }
@@ -413,7 +414,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
     try {
       const userParam = userId ? `&userId=${encodeURIComponent(userId)}` : '';
       const r = await fetch(
-        `/api/meta?action=insights&accountId=${encodeURIComponent(selected.meta_ad_account_id)}&preset=${preset}${userParam}`
+        `/api/meta?action=insights&accountId=${encodeURIComponent(selectedAccountId)}&preset=${preset}${userParam}`
       );
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Erro ao buscar métricas');
@@ -424,9 +425,11 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
     } finally {
       setLoading(false);
     }
-  }, [selected?.meta_ad_account_id, preset, configured, userId]);
+  }, [selectedAccountId, preset, configured, userId]);
 
   useEffect(() => {
+    // Sincroniza as métricas remotas e limpa a seleção sem conta vinculada.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadInsights();
   }, [loadInsights]);
 
@@ -483,7 +486,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
         </div>
         <button
           onClick={() => setIsTokenModalOpen(true)}
-          className="h-8 px-3 rounded-full border border-line bg-surface-2 hover:bg-surface-2/80 text-xs font-medium text-fg inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+          className="h-8 px-3 rounded-full uv-glass-btn text-xs font-medium text-fg inline-flex items-center gap-1.5 cursor-pointer transition-colors"
           title="Configurar ou trocar Token da Meta"
         >
           <Key className="w-3.5 h-3.5 text-accent" />
@@ -538,7 +541,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
       {/* Grid Principal: Lista à Esquerda (Desktop/Mobile) e Detalhes à Direita (Desktop) */}
       <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4 items-start">
         {/* Card 1: Lista de Clientes com Rolagem Suave */}
-        <div className="rounded-2xl border border-line bg-surface p-3 sm:p-4 flex flex-col">
+        <div className="uv-card p-3 sm:p-4 flex flex-col">
           <div className="flex items-center justify-between pb-3 px-1 border-b border-line">
             <span className="font-semibold text-sm sm:text-base text-fg">Clientes</span>
             <span className="text-xs text-muted uv-num">
@@ -608,7 +611,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
         </div>
 
         {/* Card 2: Painel Fixo à Direita (Apenas Telas Grandes - Desktop) */}
-        <div className="hidden lg:block rounded-2xl border border-line bg-surface p-5">
+        <div className="hidden lg:block min-w-0 uv-card p-5">
           <AnimatePresence mode="wait">
             {!selected ? (
               <div className="py-24 text-center text-muted">
@@ -659,7 +662,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              className="absolute inset-0 uv-scrim"
               onClick={() => setIsMobileModalOpen(false)}
             />
 
@@ -680,12 +683,12 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 320, mass: 0.8 }}
-              className="relative bg-surface border-t sm:border border-line-strong rounded-t-[28px] sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden z-10"
+              className="relative uv-glass-overlay rounded-t-[28px] sm:rounded-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden z-10"
             >
               {/* Barra tátil superior com alça de arraste centralizada e botão de fechar rápido */}
               <div
                 onPointerDown={(e) => dragControls.start(e)}
-                className="w-full pt-3 pb-2.5 px-4 flex items-center justify-between cursor-grab active:cursor-grabbing sm:hidden shrink-0 select-none touch-none border-b border-line/40 bg-surface"
+                className="w-full pt-3 pb-2.5 px-4 flex items-center justify-between cursor-grab active:cursor-grabbing sm:hidden shrink-0 select-none touch-none border-b border-line/40 bg-transparent"
                 aria-label="Puxar para fechar"
               >
                 <div className="w-8" />
@@ -730,14 +733,14 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/75 backdrop-blur-sm"
+              className="absolute inset-0 uv-scrim"
               onClick={() => setIsTokenModalOpen(false)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative bg-surface border border-line-strong rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-6 z-10"
+              className="relative uv-glass-overlay rounded-2xl w-full max-w-md p-5 sm:p-6 z-10"
             >
               <div className="flex items-center justify-between pb-3 border-b border-line">
                 <div className="flex items-center gap-2">
@@ -763,7 +766,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
                     onChange={(e) => setTokenInput(e.target.value)}
                     placeholder="EAAY..."
                     required
-                    className="w-full rounded-xl border border-line bg-surface-2 p-3 text-xs sm:text-sm text-fg font-mono focus:outline-none focus:ring-2 focus:ring-accent/60 resize-none break-all"
+                    className="w-full rounded-xl uv-glass-input p-3 text-xs sm:text-sm text-fg font-mono focus:outline-none focus:ring-2 focus:ring-accent/60 resize-none break-all"
                   />
                   <p className="text-[11px] text-muted mt-1 leading-relaxed">
                     Você pode gerar este token em <b>Gerenciador de Negócios ➔ Usuários do sistema</b> ou no <b>Graph API Explorer</b> com a permissão <code>ads_read</code>.
@@ -786,7 +789,7 @@ export default function AnunciosSection({ clients = [], onLinkAccount, userId })
                   <button
                     type="button"
                     onClick={() => setIsTokenModalOpen(false)}
-                    className="px-4 py-2 rounded-xl border border-line bg-surface-2 hover:bg-surface-2/80 text-xs sm:text-sm font-medium text-fg cursor-pointer"
+                    className="px-4 py-2 rounded-xl uv-glass-btn text-xs sm:text-sm font-medium text-fg cursor-pointer"
                   >
                     Cancelar
                   </button>

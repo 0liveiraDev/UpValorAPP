@@ -25,11 +25,11 @@ function CustomTooltip({ active, payload, seriesName, seriesColor, palette }) {
   return (
     <div
       style={{
-        backgroundColor: palette.tooltipBg,
+
         borderColor: palette.tooltipBorder,
         color: palette.tooltipFg,
       }}
-      className="rounded-xl border px-3.5 py-2.5 text-xs shadow-xl backdrop-blur-md"
+      className="uv-glass-overlay uv-glass-inset rounded-xl px-3.5 py-2.5 text-xs"
     >
       <div className="inline-flex items-center px-2 py-0.5 rounded-md bg-white/10 font-semibold text-muted mb-1.5">
         {dataItem?.fullLabel || dataItem?.label}

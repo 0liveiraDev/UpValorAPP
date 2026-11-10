@@ -147,7 +147,7 @@ export default function WhatsappBillingModal({
       {isOpen && client && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 uv-scrim"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -159,7 +159,7 @@ export default function WhatsappBillingModal({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-            className="relative bg-surface border border-line-strong rounded-2xl shadow-2xl w-full max-w-lg p-4 sm:p-5 z-10 max-h-[90vh] flex flex-col overflow-hidden"
+            className="relative uv-glass-overlay rounded-2xl w-full max-w-lg p-4 sm:p-5 z-10 max-h-[90vh] flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
@@ -247,13 +247,13 @@ export default function WhatsappBillingModal({
                       setSaveStatus('idle');
                     }}
                     placeholder="(85) 99999-9999"
-                    className="flex-1 min-w-0 bg-surface-2 border border-line focus:border-accent focus:outline-none rounded-xl px-3.5 py-2 text-sm text-fg placeholder:text-subtle transition-colors"
+                    className="flex-1 min-w-0 uv-glass-input rounded-xl px-3.5 py-2 text-sm text-fg placeholder:text-subtle transition-colors"
                   />
                   <button
                     type="button"
                     onClick={handleSavePhone}
                     disabled={saveStatus === 'saving'}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-line-strong bg-surface-2 hover:bg-surface-2/80 text-xs sm:text-sm font-medium text-fg disabled:opacity-60 transition-colors cursor-pointer shrink-0"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl uv-glass-btn text-xs sm:text-sm font-medium text-fg disabled:opacity-60 transition-colors cursor-pointer shrink-0"
                   >
                     <Save className="w-4 h-4 text-muted" aria-hidden="true" />
                     <span>{saveStatus === 'saving' ? 'Salvando...' : 'Salvar'}</span>
@@ -283,7 +283,7 @@ export default function WhatsappBillingModal({
                   <button
                     type="button"
                     onClick={handleCopyMessage}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-line bg-surface-2/80 hover:border-line-strong text-xs font-medium text-muted hover:text-fg transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg uv-glass-btn text-xs font-medium text-muted hover:text-fg transition-colors cursor-pointer"
                   >
                     {copied ? (
                       <>
@@ -309,7 +309,7 @@ export default function WhatsappBillingModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-fg hover:bg-surface-2 transition-colors cursor-pointer"
+                className="uv-glass-btn px-4 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-fg hover:bg-surface-2 transition-colors cursor-pointer"
               >
                 Cancelar
               </button>

@@ -3,11 +3,12 @@
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --uv-bg: #0f1117;
-  --uv-surface: #151821;
-  --uv-surface-2: #1c202b;
-  --uv-line: rgba(255, 255, 255, 0.07);
-  --uv-line-strong: rgba(255, 255, 255, 0.14);
+  --uv-bg: #070a12;
+  --uv-surface: rgba(255, 255, 255, 0.045);
+  --uv-surface-2: rgba(255, 255, 255, 0.07);
+  --uv-surface-solid: #121620;
+  --uv-line: rgba(255, 255, 255, 0.09);
+  --uv-line-strong: rgba(255, 255, 255, 0.18);
   --uv-fg: #f1f5f9;
   --uv-muted: #a7b0c0;
   --uv-subtle: #8c96a9;
@@ -17,17 +18,41 @@
   --uv-neg: #fb7185;
   --uv-warn: #fb923c;
   --uv-traffic: #c084fc;
-  --uv-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -18px rgba(0, 0, 0, 0.7);
-  --uv-nav: rgba(12, 14, 20, 0.86);
+  --uv-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.32);
+  --uv-nav: rgba(255, 255, 255, 0.06);
+
+  /* Glassmorphism — níveis de elevação */
+  --uv-glass-1: rgba(255, 255, 255, 0.08);
+  --uv-glass-1-hover: rgba(255, 255, 255, 0.12);
+  --uv-glass-2: rgba(255, 255, 255, 0.06);
+  --uv-glass-3: rgba(255, 255, 255, 0.16);
+  --uv-glass-3-tint: rgba(10, 13, 22, 0.62);
+  --uv-glass-border: rgba(255, 255, 255, 0.15);
+  --uv-glass-border-hover: rgba(255, 255, 255, 0.3);
+  --uv-glass-divider: rgba(255, 255, 255, 0.1);
+  --uv-glass-highlight: rgba(255, 255, 255, 0.2);
+  --uv-glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.32);
+  --uv-glass-overlay-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.6);
+  --uv-glass-input: rgba(255, 255, 255, 0.06);
+  --uv-glass-input-hover: rgba(255, 255, 255, 0.1);
+  --uv-glass-btn-hover: rgba(255, 255, 255, 0.15);
+  --uv-glass-sheen: rgba(255, 255, 255, 0.1);
+  --uv-scrim: rgba(3, 5, 10, 0.6);
+
+  /* Fundo ambiente (dá profundidade ao vidro) */
+  --uv-orb-1: rgba(59, 130, 246, 0.3);
+  --uv-orb-2: rgba(56, 189, 248, 0.13);
+  --uv-orb-3: rgba(124, 58, 237, 0.17);
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --uv-bg: #f4f6fb;
-  --uv-surface: #ffffff;
-  --uv-surface-2: #eef1f7;
-  --uv-line: #e2e7f0;
-  --uv-line-strong: #cbd3e1;
+  --uv-bg: #eaf0f9;
+  --uv-surface: rgba(255, 255, 255, 0.6);
+  --uv-surface-2: rgba(15, 23, 42, 0.045);
+  --uv-surface-solid: #f8fafc;
+  --uv-line: rgba(15, 23, 42, 0.08);
+  --uv-line-strong: rgba(15, 23, 42, 0.16);
   --uv-fg: #0f172a;
   --uv-muted: #475569;
   --uv-subtle: #5f6b7d;
@@ -37,8 +62,29 @@
   --uv-neg: #be123c;
   --uv-warn: #c2410c;
   --uv-traffic: #7e22ce;
-  --uv-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 32px -20px rgba(15, 23, 42, 0.22);
-  --uv-nav: rgba(255, 255, 255, 0.88);
+  --uv-shadow: 0 0 0 1px rgba(15, 23, 42, 0.05), 0 8px 32px 0 rgba(15, 23, 42, 0.1);
+  --uv-nav: rgba(255, 255, 255, 0.6);
+
+  --uv-glass-1: rgba(255, 255, 255, 0.65);
+  --uv-glass-1-hover: rgba(255, 255, 255, 0.78);
+  --uv-glass-2: rgba(255, 255, 255, 0.6);
+  --uv-glass-3: rgba(255, 255, 255, 0.8);
+  --uv-glass-3-tint: rgba(255, 255, 255, 0.35);
+  --uv-glass-border: rgba(255, 255, 255, 0.8);
+  --uv-glass-border-hover: rgba(255, 255, 255, 1);
+  --uv-glass-divider: rgba(15, 23, 42, 0.08);
+  --uv-glass-highlight: rgba(255, 255, 255, 0.95);
+  --uv-glass-shadow: 0 0 0 1px rgba(15, 23, 42, 0.05), 0 8px 32px 0 rgba(15, 23, 42, 0.1);
+  --uv-glass-overlay-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06), 0 24px 64px -12px rgba(15, 23, 42, 0.3);
+  --uv-glass-input: rgba(255, 255, 255, 0.55);
+  --uv-glass-input-hover: rgba(255, 255, 255, 0.75);
+  --uv-glass-btn-hover: rgba(255, 255, 255, 0.9);
+  --uv-glass-sheen: rgba(255, 255, 255, 0.6);
+  --uv-scrim: rgba(15, 23, 42, 0.35);
+
+  --uv-orb-1: rgba(59, 130, 246, 0.22);
+  --uv-orb-2: rgba(14, 165, 233, 0.14);
+  --uv-orb-3: rgba(167, 139, 250, 0.18);
 }
 
 /* Logo por tema: texto branco no escuro, texto escuro no claro */
@@ -51,6 +97,7 @@
   --color-bg: var(--uv-bg);
   --color-surface: var(--uv-surface);
   --color-surface-2: var(--uv-surface-2);
+  --color-surface-solid: var(--uv-surface-solid);
   --color-line: var(--uv-line);
   --color-line-strong: var(--uv-line-strong);
   --color-fg: var(--uv-fg);
@@ -62,21 +109,190 @@
   --color-neg: var(--uv-neg);
   --color-warn: var(--uv-warn);
   --color-traffic: var(--uv-traffic);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-outfit);
+  --font-display: var(--font-unbounded);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--uv-bg);
   color: var(--uv-fg);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-outfit), system-ui, sans-serif;
 }
 
+/* Fundo ambiente fixo: orbs suaves que o vidro desfoca e refrata */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60vmax 45vmax at 8% -6%, var(--uv-orb-1), transparent 62%),
+    radial-gradient(45vmax 40vmax at 100% 18%, var(--uv-orb-2), transparent 60%),
+    radial-gradient(55vmax 45vmax at 78% 108%, var(--uv-orb-3), transparent 62%),
+    var(--uv-bg);
+}
+
+/* Tipografia de display (títulos de seção) */
+@layer base {
+  h1,
+  .uv-display {
+    font-family: var(--font-unbounded), var(--font-outfit), system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+}
+
+/* ============================================================
+   GLASSMORPHISM — 3 níveis de elevação
+   Regra: só a superfície direta recebe backdrop-filter.
+   Nada com backdrop-filter dentro de .uv-glass / .uv-card.
+   Em @layer components para que utilitários Tailwind possam sobrescrever.
+   ============================================================ */
+@layer components {
+/* Nível 1 — Cards e superfícies de conteúdo */
+.uv-glass,
 .uv-card {
-  background: var(--uv-surface);
-  border: 1px solid var(--uv-line);
-  border-radius: 16px;
-  box-shadow: var(--uv-shadow);
+  background: var(--uv-glass-1);
+  border: 1px solid var(--uv-glass-border);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 0 var(--uv-glass-highlight), var(--uv-glass-shadow);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  transition: background-color 300ms ease-out, border-color 300ms ease-out,
+    box-shadow 300ms ease-out;
+}
+
+.uv-glass:hover,
+.uv-card:hover {
+  background: var(--uv-glass-1-hover);
+  border-color: var(--uv-glass-border-hover);
+}
+
+/* Nível 2 — Header, navegação e barras flutuantes */
+.uv-glass-nav {
+  background: var(--uv-glass-2);
+  border-color: var(--uv-glass-divider);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(20px) saturate(150%);
+}
+
+/* Nível 3 — Modais, dropdowns e popovers */
+.uv-glass-overlay {
+  background: linear-gradient(var(--uv-glass-3), var(--uv-glass-3)), var(--uv-glass-3-tint);
+  border: 1px solid var(--uv-glass-border);
+  box-shadow: inset 0 1px 0 0 var(--uv-glass-highlight), var(--uv-glass-overlay-shadow);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+}
+
+/* Camada de escurecimento atrás de modais (sem blur: o blur fica no painel) */
+.uv-scrim {
+  background: var(--uv-scrim);
+}
+
+/* Inputs e campos de busca (sem blur próprio: vivem dentro de superfícies de vidro) */
+.uv-glass-input {
+  background: var(--uv-glass-input);
+  border: 1px solid var(--uv-glass-border);
+  color: var(--uv-fg);
+  box-shadow: inset 0 1px 0 0 var(--uv-glass-sheen);
+  transition: background-color 300ms ease-out, border-color 300ms ease-out,
+    box-shadow 300ms ease-out;
+}
+
+.uv-glass-input::placeholder {
+  color: var(--uv-subtle);
+}
+
+.uv-glass-input:hover {
+  background: var(--uv-glass-input-hover);
+  border-color: var(--uv-glass-border-hover);
+}
+
+.uv-glass-input:focus {
+  outline: none;
+  border-color: var(--uv-accent);
+  box-shadow: inset 0 1px 0 0 var(--uv-glass-sheen), 0 0 0 3px color-mix(in srgb, var(--uv-accent) 30%, transparent);
+}
+
+.uv-glass-input option {
+  background: var(--uv-surface-solid);
+  color: var(--uv-fg);
+}
+
+/* Botões secundários com reflexo de vidro */
+.uv-glass-btn {
+  background: linear-gradient(180deg, var(--uv-glass-sheen), transparent 60%), var(--uv-glass-input);
+  border: 1px solid var(--uv-glass-border);
+  color: var(--uv-fg);
+  transition: background-color 300ms ease-out, border-color 300ms ease-out,
+    color 300ms ease-out;
+}
+
+.uv-glass-btn:hover {
+  background: linear-gradient(180deg, var(--uv-glass-sheen), transparent 60%), var(--uv-glass-btn-hover);
+  border-color: var(--uv-glass-border-hover);
+}
+
+/* Fallbacks de acessibilidade: transparência reduzida ou navegador sem suporte */
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  [data-theme="dark"] {
+    --uv-surface: #141821;
+    --uv-surface-2: #1b202b;
+    --uv-glass-1: #151922;
+    --uv-glass-1-hover: #1a1f2a;
+    --uv-glass-2: #10131b;
+    --uv-glass-3: #1b1f2a;
+    --uv-glass-3-tint: #1b1f2a;
+    --uv-glass-input: #1b202b;
+    --uv-glass-input-hover: #222836;
+    --uv-glass-btn-hover: #262d3c;
+    --uv-scrim: rgba(3, 5, 10, 0.85);
+  }
+
+  [data-theme="light"] {
+    --uv-surface: #ffffff;
+    --uv-surface-2: #eef1f7;
+    --uv-glass-1: #ffffff;
+    --uv-glass-1-hover: #ffffff;
+    --uv-glass-2: #ffffff;
+    --uv-glass-3: #ffffff;
+    --uv-glass-3-tint: #ffffff;
+    --uv-glass-input: #f4f6fb;
+    --uv-glass-input-hover: #eef1f7;
+    --uv-glass-btn-hover: #e9edf5;
+    --uv-glass-border: #dbe2ee;
+    --uv-glass-border-hover: #c3cddd;
+    --uv-scrim: rgba(15, 23, 42, 0.6);
+  }
+
+  .uv-glass,
+  .uv-card,
+  .uv-glass-nav,
+  .uv-glass-overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  body::before {
+    background: var(--uv-bg);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .uv-glass,
+  .uv-card {
+    background: var(--uv-surface-solid);
+  }
+
+  .uv-glass-nav,
+  .uv-glass-overlay {
+    background: var(--uv-surface-solid);
+  }
+}
 }
 
 .uv-num {
@@ -87,27 +303,17 @@ body {
   from {
     opacity: 0;
     transform: translateY(14px);
-    filter: blur(4px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: blur(0);
   }
 }
 
+/* Sem filter: blur na entrada — um filter no ancestral quebraria o backdrop-filter dos cards */
 .uv-enter {
   animation: uv-enter 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: var(--uv-delay, 0ms);
-}
-
-.uv-card {
-  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 200ms ease, border-color 200ms ease;
-}
-
-.uv-card:hover {
-  border-color: var(--uv-line-strong);
 }
 
 ::view-transition-old(root),
@@ -151,4 +357,10 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--uv-subtle);
+}
+
+/* Superfícies internas já recebem o desfoque do card ou modal ancestral. */
+.uv-glass-inset {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }

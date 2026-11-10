@@ -67,7 +67,7 @@ export default function FluxoSection({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar lançamento..."
               aria-label="Buscar lançamento"
-              className="h-10 pl-9 pr-4 rounded-full bg-surface border border-line text-sm text-fg placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-accent/60 w-48 sm:w-60"
+              className="uv-glass-input h-10 pl-9 pr-4 rounded-full text-sm w-48 sm:w-60"
             />
           </div>
 

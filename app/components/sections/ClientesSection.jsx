@@ -109,7 +109,7 @@ export default function ClientesSection({
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar cliente..."
               aria-label="Buscar cliente"
-              className="h-10 pl-9 pr-4 rounded-full bg-surface border border-line text-sm text-fg placeholder:text-subtle focus:outline-none focus:ring-2 focus:ring-accent/60 w-48 sm:w-60"
+              className="uv-glass-input h-10 pl-9 pr-4 rounded-full text-sm w-48 sm:w-60"
             />
           </div>
 
@@ -213,7 +213,7 @@ export default function ClientesSection({
 
       {/* Alerta de Contratos Vencidos */}
       {expiredContracts.length > 0 && (
-        <div className="bg-neg/6 border border-neg/25 rounded-2xl p-4 space-y-3">
+        <div className="uv-glass border-neg/35 rounded-2xl p-4 space-y-3">
           <h3 className="text-neg font-semibold text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4" aria-hidden="true" /> Contratos
             Vencidos ({expiredContracts.length})
@@ -222,7 +222,7 @@ export default function ClientesSection({
             {expiredContracts.map((c) => (
               <div
                 key={c.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-surface rounded-xl p-3 border border-line"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-surface-2/60 rounded-xl p-3 border border-line"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-fg font-medium text-sm break-words sm:truncate">

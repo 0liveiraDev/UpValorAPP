@@ -104,13 +104,13 @@ function LiquidCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, filter: "url('#goo')", background: '#0f172a' }}
+      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, filter: "url('#goo') blur(40px) saturate(120%)", background: '#0f172a' }}
     />
   );
 }
 
-const loginInputClass = "w-full bg-slate-800/50 border border-slate-700 text-white rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500";
-const inputClass = "w-full bg-surface-2 border border-line-strong text-fg placeholder:text-subtle rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-accent";
+const loginInputClass = "uv-glass-input w-full rounded-xl px-4 py-2.5 text-sm";
+const inputClass = "uv-glass-input w-full rounded-xl px-4 py-2.5 text-sm";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -687,7 +687,7 @@ export default function App() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: '#0f172a' }}>
+      <div data-theme="dark" className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden text-fg" style={{ background: '#0f172a' }}>
         {/* SVG Gooey Filter */}
         <svg style={{ position: 'absolute', visibility: 'hidden', width: 0, height: 0 }}>
           <defs>
@@ -702,15 +702,14 @@ export default function App() {
         {/* Canvas com blobs líquidos */}
         <LiquidCanvas />
 
-        {/* Overlay de vidro */}
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1, background: 'rgba(15,23,42,0.25)', backdropFilter: 'blur(40px) saturate(120%)', pointerEvents: 'none' }} />
+        {/* Vinheta de contraste; o desfoque é aplicado diretamente no canvas. */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1, background: 'rgba(15,23,42,0.25)', pointerEvents: 'none' }} />
 
         {/* Card de login */}
-        <div className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-2xl shadow-2xl">
+        <div className="relative z-10 w-full max-w-md uv-glass-overlay p-8 rounded-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="w-40 h-auto mb-2">
-              <Image unoptimized src="/logo.png" alt="UpValor" className="uv-logo-light w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
-              <Image unoptimized src="/logo-dark.png" alt="UpValor" className="uv-logo-dark w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
+              <Image unoptimized src="/logo-dark.png" alt="UpValor" className="w-full h-auto object-contain drop-shadow-xl" width="160" height="64" fetchPriority="high" />
             </div>
           </div>
           {loginError && <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm text-center">{loginError}</div>}
@@ -785,7 +784,7 @@ export default function App() {
   };
 
   return (
-      <div className="min-h-screen bg-bg text-fg font-sans relative">
+      <div className="min-h-screen bg-transparent text-fg font-sans relative">
         <AppHeader
           navItems={navItems}
           activeTab={activeTab}
@@ -943,12 +942,12 @@ export default function App() {
         <AnimatePresence>
           {modal.isOpen && (
             <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+              <div className="absolute inset-0 uv-scrim" onClick={closeModal} />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="relative bg-surface border border-line-strong rounded-2xl shadow-2xl w-full max-w-md p-6 z-10"
+                className="relative uv-glass-overlay rounded-2xl w-full max-w-md p-6 z-10"
               >
                 <h3 className="text-xl font-bold text-fg mb-1">
                   {modal.type === 'client' ? (modal.data ? 'Editar Cliente' : 'Novo Cliente') :
@@ -1134,7 +1133,7 @@ export default function App() {
                   )}
 
                   <div className="pt-4 flex justify-end space-x-3">
-                    <button type="button" onClick={closeModal} disabled={isSaving} className="px-4 py-2 text-muted hover:text-fg transition-colors disabled:opacity-50">Cancelar</button>
+                    <button type="button" onClick={closeModal} disabled={isSaving} className="uv-glass-btn rounded-xl px-4 py-2 text-muted hover:text-fg transition-colors disabled:opacity-50">Cancelar</button>
                     <button type="submit" disabled={isSaving} className="px-6 py-2 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed">{isSaving ? 'Salvando...' : 'Salvar'}</button>
                   </div>
                 </form>
